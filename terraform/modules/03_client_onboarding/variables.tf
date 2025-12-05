@@ -11,6 +11,16 @@ variable "zone_id" {
   type = string
 }
 
+variable "environment" {
+  type = string
+}
+
+variable "client_name" {
+  type = string
+}
+variable "alb_zone_id" {
+  type = string
+}
 
 variable "domain_name" {
   description = "The client's domain name (e.g., example.com)."

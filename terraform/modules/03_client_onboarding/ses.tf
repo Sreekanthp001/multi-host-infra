@@ -5,9 +5,10 @@ resource "aws_ses_domain_identity" "client" {
 
 # 2. DKIM (DomainKeys Identified Mail) Records
 # SES requires 3 CNAME records for DKIM to verify sending identity
-resource "aws_ses_domain_identity_dkim" "client" {
-  domain = aws_ses_domain_identity.client.domain
+resource "aws_ses_domain_dkim" "client" {
+  domain = var.domain_name
 }
+
 
 resource "aws_route53_record" "dkim" {
   count   = 3

@@ -14,18 +14,6 @@ data "aws_acm_certificate" "wildcard" {
   statuses   = ["ISSUED"]
 }
 
-resource "aws_route53_record" "acm_validation" {
-  for_each = {
-    for dvo in data.aws_acm_certificate.wildcard.domain_validation_options : dvo.domain_name => dvo
-    if dvo.domain_name == var.domain_name || dvo.domain_name == "*.${var.domain_name}"
-  }
-
-  zone_id = aws_route53_zone.client.zone_id
-  name    = each.value.resource_record_name
-  type    = each.value.resource_record_type
-  records = [each.value.resource_record_value]
-  ttl     = 60
-}
 
 # 3. Primary A Record (Root domain)
 resource "aws_route53_record" "root_alias" {

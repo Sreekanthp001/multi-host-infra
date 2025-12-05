@@ -9,7 +9,7 @@ module "networking" {
 }
 
 # 02. Core Services Module Call
-/* module "core_services" {
+module "core_services" {
   source = "../../modules/02_core_services"
   
   project_name        = "ClientHostingProd"
@@ -24,7 +24,7 @@ module "networking" {
 # --- 03. Client Onboarding Calls ---
 
 # 3A. Onboard Static Site Client: venturemond.com (Static S3/CloudFront)
-module "client_venturemond" {
+ module "client_venturemond" {
   source           = "../../modules/03_client_onboarding"
   project_name     = "ClientHostingProd"
   domain_name      = "venturemond.com"
@@ -47,14 +47,14 @@ module "client_sampleclient" {
   ecs_tasks_sg_id  = module.core_services.ecs_tasks_sg_id
   private_subnet_ids = module.networking.private_subnet_ids
   vpc_id           = module.networking.vpc_id # Needed for Target Group
-}*/
+}
 
 
-/*output "acm_validation_records" {
+output "acm_validation_records" {
   value = module.core_services.acm_validation_records
 }
 
 # Output ECR URL for CI/CD
  output "sampleclient_ecr_url" {
   value = module.client_sampleclient.ecr_repository_url
-} */
+} 

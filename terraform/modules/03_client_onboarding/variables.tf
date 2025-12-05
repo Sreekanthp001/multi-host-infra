@@ -7,6 +7,11 @@ variable "vpc_id" {
   type = string
 }
 
+variable "zone_id" {
+  type = string
+}
+
+
 variable "domain_name" {
   description = "The client's domain name (e.g., example.com)."
   type        = string

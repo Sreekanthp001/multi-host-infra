@@ -3,6 +3,10 @@ variable "project_name" {
   type        = string
 }
 
+variable "vpc_id" {
+  type = string
+}
+
 variable "domain_name" {
   description = "The client's domain name (e.g., example.com)."
   type        = string

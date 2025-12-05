@@ -27,16 +27,6 @@ variable "domain_name" {
   type        = string
 }
 
-variable "site_type" {
-  description = "Type of hosting: 'static' (S3/CF) or 'fargate' (ECS/ALB)."
-  type        = string
-}
-
-variable "certificate_arn" {
-  description = "ARN of the ACM certificate to use for SSL/TLS."
-  type        = string
-}
-
 variable "alb_dns_name" {
   description = "DNS name of the central Application Load Balancer."
   type        = string

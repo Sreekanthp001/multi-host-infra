@@ -50,11 +50,11 @@ module "client_sampleclient" {
 }*/
 
 
-output "acm_validation_records" {
+/*output "acm_validation_records" {
   value = module.core_services.acm_validation_records
 }
 
 # Output ECR URL for CI/CD
-/* output "sampleclient_ecr_url" {
+ output "sampleclient_ecr_url" {
   value = module.client_sampleclient.ecr_repository_url
 } */

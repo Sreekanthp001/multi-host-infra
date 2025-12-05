@@ -10,9 +10,8 @@ resource "aws_route53_zone" "client" {
 # 2. ACM Validation Records
 # Find the specific validation records needed for THIS domain from the existing wildcard certificate
 data "aws_acm_certificate" "wildcard" {
-  arn        = var.certificate_arn
-  most_recent = true
-  statuses   = ["ISSUED", "PENDING_VALIDATION"]
+  domain = var.domain_name
+  statuses   = ["ISSUED"]
 }
 
 resource "aws_route53_record" "acm_validation" {
@@ -37,7 +36,10 @@ resource "aws_route53_record" "root_alias" {
   # Determine target based on site_type
   alias {
     name                   = var.site_type == "static" ? aws_cloudfront_distribution.static_site[0].domain_name : var.alb_dns_name
-    zone_id                = var.site_type == "static" ? aws_cloudfront_distribution.static_site[0].hosted_zone_id : data.aws_lb.main.zone_id
+    zone_id = var.site_type == "static" ?
+      aws_cloudfront_distribution.static_site[0].hosted_zone_id :
+      data.aws_lb.main[0].zone_id
+
     evaluate_target_health = true
   }
   

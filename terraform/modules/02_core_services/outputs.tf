@@ -23,6 +23,7 @@ output "ecs_cluster_id" {
   value       = aws_ecs_cluster.main.id
 }
 
+
 output "ecs_tasks_sg_id" {
   description = "Security Group ID for ECS tasks (allows traffic from ALB)."
   value       = aws_security_group.ecs_tasks.id

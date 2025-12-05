@@ -1,10 +1,6 @@
 # 1. SES Domain Identity Verification
 resource "aws_ses_domain_identity" "client" {
   domain = var.domain_name
-
-  tags = {
-    Project = var.project_name
-  }
 }
 
 # 2. DKIM (DomainKeys Identified Mail) Records

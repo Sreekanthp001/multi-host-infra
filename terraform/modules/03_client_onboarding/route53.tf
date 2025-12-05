@@ -36,9 +36,7 @@ resource "aws_route53_record" "root_alias" {
   # Determine target based on site_type
   alias {
     name                   = var.site_type == "static" ? aws_cloudfront_distribution.static_site[0].domain_name : var.alb_dns_name
-    zone_id = var.site_type == "static" ?
-      aws_cloudfront_distribution.static_site[0].hosted_zone_id :
-      data.aws_lb.main[0].zone_id
+    zone_id = var.site_type == "static" ? aws_cloudfront_distribution.static_site[0].hosted_zone_id :data.aws_lb.main[0].zone_id
 
     evaluate_target_health = true
   }

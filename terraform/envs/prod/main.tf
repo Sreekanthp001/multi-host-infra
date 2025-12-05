@@ -30,6 +30,7 @@ module "core_services" {
   domain_name      = "venturemond.com"
   site_type        = "static"
   certificate_arn  = module.core_services.acm_certificate_arn
+  vpc_id = module.networking.vpc_id
 } 
 
 # 3B. Onboard Dynamic Site Client: sampleclient.com (Dynamic Fargate/ALB)

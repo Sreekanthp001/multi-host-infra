@@ -48,8 +48,6 @@ module "client_sampleclient" {
   client_name  = "sampleclient"
   alb_zone_id  = module.alb.alb_zone_id
   alb_dns_name = module.alb.alb_dns_name
-  site_type = var.sampleclient_site_type
-  certificate_arn = var.sampleclient_certificate_arn
 }
 
 

@@ -48,7 +48,7 @@ resource "aws_subnet" "private" {
 # EIP for NAT Gateway (one EIP per AZ)
 resource "aws_eip" "nat" {
   count = length(var.availability_zones)
-  vpc   = true
+  #vpc   = true
   tags = {
     Name = "${var.project_name}-NAT-EIP-${count.index + 1}"
   }
@@ -75,7 +75,7 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw
+    gateway_id = aws_internet_gateway.igw.id
   }
   
   tags = {

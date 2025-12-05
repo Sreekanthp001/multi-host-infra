@@ -24,30 +24,30 @@ module "core_services" {
 # --- 03. Client Onboarding Calls ---
 
 # 3A. Onboard Static Site Client: venturemond.com (Static S3/CloudFront)
- module "client_venturemond" {
-  source           = "../../modules/03_client_onboarding"
-  project_name     = "ClientHostingProd"
-  domain_name      = "venturemond.com"
-  site_type        = "static"
-  certificate_arn  = module.core_services.acm_certificate_arn
-  vpc_id = module.networking.vpc_id
-} 
+module "client_venturemond" {
+  source      = "../../modules/03_client_onboarding"
+  zone_id     = var.hosted_zone_id
+  domain_name = var.venturemond_domain
+  vpc_id      = module.networking.vpc_id
+  project_name = var.project_name
+  environment  = var.environment
+  client_name  = "venturemond"
+  alb_zone_id  = module.alb.alb_zone_id
+  alb_dns_name = module.alb.alb_dns_name
+}
+
 
 # 3B. Onboard Dynamic Site Client: sampleclient.com (Dynamic Fargate/ALB)
 module "client_sampleclient" {
-  source           = "../../modules/03_client_onboarding"
-  project_name     = "ClientHostingProd"
-  domain_name      = "sampleclient.com"
-  site_type        = "fargate" 
-  certificate_arn  = module.core_services.acm_certificate_arn
-  
-  # Fargate Specific Inputs:
-  alb_dns_name     = module.core_services.alb_dns_name
-  alb_listener_arn = module.core_services.https_listener_arn
-  ecs_cluster_id   = module.core_services.ecs_cluster_id
-  ecs_tasks_sg_id  = module.core_services.ecs_tasks_sg_id
-  private_subnet_ids = module.networking.private_subnet_ids
-  vpc_id           = module.networking.vpc_id # Needed for Target Group
+  source      = "../../modules/03_client_onboarding"
+  zone_id     = var.hosted_zone_id
+  domain_name = var.sampleclient_domain
+  vpc_id      = module.networking.vpc_id
+  project_name = var.project_name
+  environment  = var.environment
+  client_name  = "sampleclient"
+  alb_zone_id  = module.alb.alb_zone_id
+  alb_dns_name = module.alb.alb_dns_name
 }
 
 

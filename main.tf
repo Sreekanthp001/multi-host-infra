@@ -52,15 +52,20 @@ module "client_deployment" {
   for_each = var.client_domains
   source   = "./modules/client_deployment"
 
-  # ... other inputs (client_name, domain_name, priority, vpc_id, private_subnets) ...
+  # Inputs derived from the for_each loop (Fixes the current "Missing required argument" errors)
+  client_name = each.key
+  domain_name = each.value
+  priority    = index(keys(var.client_domains), each.key) + 1
 
-  # 1. ALB/Listener Input (FIXED: Uses the exact name you provided in your outputs.tf)
-  alb_https_listener_arn = module.alb.alb_https_listener_arn 
+  # 1. Networking Inputs
+  vpc_id          = module.networking.vpc_id
+  private_subnets = module.networking.private_subnet_ids 
 
-  # 2. ECS Inputs (FIXED: Uses the exact names you provided in your outputs.tf)
-  ecs_cluster_id          = module.ecs_cluster.ecs_cluster_id 
+  # 2. ALB/Listener Input (Uses the exact name from your modules/alb/outputs.tf)
+  alb_https_listener_arn = module.alb.alb_https_listener_arn
+
+  # 3. ECS Inputs (Uses the exact names from your modules/ecs/outputs.tf)
+  ecs_cluster_id                = module.ecs_cluster.ecs_cluster_id
   ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id
-  
-  # Task definition is the only one left. We assume this name matches the resource that is missing.
-  task_definition_arn = module.ecs_cluster.task_definition_arn 
+  task_definition_arn           = module.ecs_cluster.task_definition_arn 
 }

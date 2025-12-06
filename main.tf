@@ -50,14 +50,10 @@ module "route53_acm" {
 
 # 5. Deploy Each Client Website (Scalable Loop)
 module "client_deployment" {
-  for_each = var.client_domains
   source   = "./modules/client_deployment"
 
+  client_domains = var.client_domains
   # Inputs derived from the for_each loop (Fixes the current "Missing required argument" errors)
-  client_name = each.key
-  domain_name = each.value
-  priority    = index(keys(var.client_domains), each.key) + 1
-
   # 1. Networking Inputs
   vpc_id          = module.networking.vpc_id
   private_subnets = module.networking.private_subnet_ids 

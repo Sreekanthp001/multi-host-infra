@@ -2,7 +2,10 @@
 output "alb_arn" {
   value = aws_lb.main.arn
 }
-
+output "alb_zone_id" {
+  description = "The canonical hosted zone ID of the ALB"
+  value       = aws_lb.main.zone_id
+}
 output "alb_dns_name" {
   value = aws_lb.main.dns_name
 }

@@ -1,4 +1,5 @@
-# providers.tf
+# providers.tf (UPDATED)
+
 terraform {
   required_providers {
     aws = {
@@ -6,18 +7,16 @@ terraform {
       version = "~> 5.0"
     }
   }
-  # Ideally, use an S3 backend for state, but for now we use local for simplicity
-  # backend "s3" { ... } 
 }
 
+# Default Provider (e.g., your infra region: us-west-2, or us-east-1 if preferred)
 provider "aws" {
-  region = var.aws_region
-  
-  default_tags {
-    tags = {
-      Project     = "Venturemond-Hosting"
-      Environment = "Production"
-      ManagedBy   = "Terraform"
-    }
-  }
+  region = var.aws_region # e.g., us-east-1
+  # ... default tags ...
+}
+
+# Secondary Provider for ACM (MUST be us-east-1 for CloudFront compatibility)
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
 }

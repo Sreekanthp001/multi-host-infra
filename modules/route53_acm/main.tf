@@ -3,12 +3,8 @@
 # 1. Hosted Zone Creation (One Zone per Domain)
 # We use a 'for_each' loop to handle multiple clients easily.
 resource "aws_route53_zone" "client_zone" {
-  for_each = toset(var.domain_names)
-  name     = each.key
-
-  tags = {
-    Name = "ClientZone-${each.key}"
-  }
+  for_each = toset(var.domain_names) # var.domain_names contains ["venturemond.com", "sampleclient.com"]
+  name     = each.key # The key of the map is "venturemond.com"
 }
 
 # 2. ACM Certificate Request
@@ -48,10 +44,11 @@ resource "aws_route53_record" "cert_validation_records" {
   ttl             = 60
   records         = [each.value.resource_record_value]
 
-  # 🔑 CRITICAL FIX: Correct HCL regex syntax for replace()
-  # This strips "*.subdomain.com" down to "subdomain.com" to find the correct zone_id
+  # CRITICAL FIX: Strip wildcard prefix and ensure no trailing dot in the key lookup
   zone_id = aws_route53_zone.client_zone[
-    replace(each.value.domain_name, "^\\*\\.", "")
+    # 1. Remove the wildcard prefix "*.":
+    # 2. Use trim to remove a possible trailing dot, ensuring the key matches the zone definition
+    trim(replace(each.value.domain_name, "^\\*\\.", ""), ".")
   ].zone_id
 }
 # 4. Wait for ACM Validation to Complete

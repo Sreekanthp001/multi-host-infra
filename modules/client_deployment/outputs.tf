@@ -7,7 +7,7 @@ output "target_group_arn" {
 
 output "listener_rule_arn" {
   description = "The ARN of the ALB Listener Rule created for this client's domain."
-  value       = aws_lb_listener_rule.host_rule.arn
+  value       = aws_lb_listener_rule.host_rule["my_test_client"].arn
 }
 
 output "ecs_service_name" {

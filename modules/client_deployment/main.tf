@@ -24,7 +24,7 @@ resource "aws_lb_target_group" "client_tg" {
 resource "aws_lb_listener_rule" "host_rule" {
   for_each = var.client_domains
   listener_arn = var.alb_https_listener_arn 
-  priority     = var.priority
+  priority     = index(keys(var.client_domains), each.key) + 1
 
   action {
     type             = "forward"
@@ -34,14 +34,14 @@ resource "aws_lb_listener_rule" "host_rule" {
   # Condition 1: Match traffic for the root domain (e.g., venturemond.com)
   condition {
     host_header {
-      values = [var.domain_name] 
+      values = [each.value] 
     }
   }
   
   # Condition 2: Match traffic for wildcard subdomains (e.g., *.venturemond.com)
   condition {
     host_header {
-      values = ["*.${var.domain_name}"] 
+      values = ["*.${each.value}"] 
     }
   }
 }

@@ -1,4 +1,3 @@
-# providers.tf (Root Directory - CORRECTED)
 
 terraform {
   required_providers {
@@ -8,7 +7,6 @@ terraform {
     }
   }
 }
-
 # Default Provider (Uses the variable from variables.tf)
 provider "aws" {
   region = var.aws_region

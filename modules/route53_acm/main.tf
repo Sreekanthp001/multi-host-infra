@@ -32,6 +32,7 @@ resource "aws_acm_certificate" "client_cert" {
 
 # ... (lines 1-36 remain the same)
 
+# 3. Create DNS Validation Records in Route53
 resource "aws_route53_record" "cert_validation_records" {
   for_each = {
     for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => dvo
@@ -43,10 +44,13 @@ resource "aws_route53_record" "cert_validation_records" {
   ttl             = 60
   records         = [each.value.resource_record_value]
 
-  # 🔑 FINAL ZONE_ID LOOKUP: 
-  # This uses a simple conditional to strip the * prefix if present
+  # 🔑 DEFINITIVE ZONE_ID LOOKUP FIX:
+  # This conditional checks for the "*. " prefix and uses substr/length 
+  # to safely retrieve the root domain name for the zone map lookup.
   zone_id = aws_route53_zone.client_zone[
-    substr(each.value.domain_name, 0, 2) == "*." ? substr(each.value.domain_name, 2, -1) : each.value.domain_name
+    substr(each.value.domain_name, 0, 2) == "*." 
+      ? substr(each.value.domain_name, 2, length(each.value.domain_name) - 2) 
+      : each.value.domain_name
   ].zone_id
 }
 # 4. Wait for ACM Validation to Complete

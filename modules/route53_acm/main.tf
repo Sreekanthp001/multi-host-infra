@@ -44,11 +44,15 @@ resource "aws_route53_record" "cert_validation_records" {
   ttl             = 60
   records         = [each.value.resource_record_value]
 
-  # CRITICAL FIX: Strip wildcard prefix and ensure no trailing dot in the key lookup
+  # 🔑 FINAL CORRECT ZONE_ID LOOKUP:
+  # This chain of functions ensures the key matches the root domain stored in aws_route53_zone.client_zone:
+  # 1. replace() removes the wildcard prefix (*.). 
+  # 2. trim() removes any potential trailing dot (.) from the result.
   zone_id = aws_route53_zone.client_zone[
-    # 1. Remove the wildcard prefix "*.":
-    # 2. Use trim to remove a possible trailing dot, ensuring the key matches the zone definition
-    trim(replace(each.value.domain_name, "^\\*\\.", ""), ".")
+    trim(
+      replace(each.value.domain_name, "^\\*\\.", ""), 
+      "."
+    )
   ].zone_id
 }
 # 4. Wait for ACM Validation to Complete

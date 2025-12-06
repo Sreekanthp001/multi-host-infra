@@ -2,6 +2,7 @@
 
 # 1. ECS Target Group (Per Client)
 resource "aws_lb_target_group" "client_tg" {
+  for_each = var.client_domains  
   name        = "${var.client_name}-tg"
   port        = 8080 # Application port inside the container
   protocol    = "HTTP"
@@ -21,6 +22,7 @@ resource "aws_lb_target_group" "client_tg" {
 # 2. ALB Listener Rule (Per Client)
 # This routes traffic from the shared ALB's HTTPS listener to this client's Target Group.
 resource "aws_lb_listener_rule" "host_rule" {
+  for_each = var.client_domains
   listener_arn = var.alb_https_listener_arn 
   priority     = var.priority
 

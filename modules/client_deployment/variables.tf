@@ -1,15 +1,5 @@
 # modules/client_deployment/variables.tf
 
-variable "client_name" {
-  description = "A unique key/name for the client (e.g., 'client_a'). Used for naming resources."
-  type        = string
-}
-
-variable "domain_name" {
-  description = "The client's root domain name (e.g., 'sree84s.site'). Used for ALB routing."
-  type        = string
-}
-
 variable "vpc_id" {
   description = "The VPC ID where the client resources will be placed."
   type        = string
@@ -32,11 +22,6 @@ variable "ecs_cluster_id" {
 variable "alb_https_listener_arn" {
   description = "The ARN of the shared HTTPS listener (port 443) on the ALB."
   type        = string
-}
-
-variable "priority" {
-  description = "The priority for the ALB listener rule (lower number = higher priority). Must be unique."
-  type        = number
 }
 
 variable "task_definition_arn" {

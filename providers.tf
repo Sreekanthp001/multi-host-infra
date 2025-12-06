@@ -15,8 +15,3 @@ provider "aws" {
   # ... default tags ...
 }
 
-# Secondary Provider for ACM (MUST be us-east-1 for CloudFront compatibility)
-provider "aws" {
-  alias  = var.aws_region
-  region = var.aws_region
-}

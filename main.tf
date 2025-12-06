@@ -11,7 +11,7 @@ module "route53_acm" {
 
   # Pass the aliased provider configuration into the module
   providers = {
-    aws = aws.us-east-1 # This tells the module to use the us_east_1 alias for ACM
+    aws = aws.us_east_1 # This tells the module to use the us_east_1 alias for ACM
   }
 
   alb_dns_name = module.alb.alb_dns_name

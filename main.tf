@@ -22,6 +22,7 @@ module "alb" {
 module "ecs_cluster" {
   source       = "./modules/ecs"
   project_name = var.project_name
+  aws_region = var.aws_region
   vpc_id       = module.networking.vpc_id
   alb_sg_id    = module.alb.alb_sg_id # Check outputs.tf for exact name
 }

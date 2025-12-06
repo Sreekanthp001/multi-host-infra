@@ -12,7 +12,7 @@ module "alb" {
   source              = "./modules/alb"
   project_name        = var.project_name
   vpc_id              = module.networking.vpc_id
-  public_subnet_ids   = module.networking.public_subnets_ids # Check outputs.tf for exact name
+  public_subnet_ids   = module.networking.public_subnet_ids # Check outputs.tf for exact name
   
   # 🔑 FIX: Provide the required ACM ARN argument, referencing the output of the ACM module
   acm_certificate_arn = module.route53_acm.acm_certificate_arn 
@@ -54,7 +54,7 @@ module "client_deployment" {
 
   # 1. Networking Inputs
   vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnets_ids # Check outputs.tf for exact name
+  private_subnets = module.networking.private_subnet_ids # Check outputs.tf for exact name
 
   # 2. ALB/Listener Input
   alb_https_listener_arn = module.alb.https_listener_arn # Check outputs.tf for exact name

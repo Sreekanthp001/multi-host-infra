@@ -31,30 +31,27 @@ module "client_deployment" {
   # Inputs derived from the for_each loop
   client_name = each.key         # e.g., "client_a"
   domain_name = each.value       # e.g., "venturemond.com"
+  priority    = index(keys(var.client_domains), each.key) + 1 
   
-  # Priority is essential for ALB Listener Rules (must be unique)
-  priority = index(keys(var.client_domains), each.key) + 1 
-  
-  # 🔑 CRITICAL: INFRASTRUCTURE REFERENCES FROM OTHER MODULES
-  # You must ensure these outputs exist in your respective modules (networking, alb, ecs, task_definition).
-
-  # 1. Networking Inputs
+    # 1. Networking Inputs
   vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnets
+  # Check module.networking/outputs.tf for the exact name
+  private_subnets = module.networking.private_subnets_list 
   
   # 2. ALB/Listener Input
-  # Assuming your ALB module outputs the HTTPS listener ARN.
+  # Check module.alb/outputs.tf for the exact name
   alb_https_listener_arn = module.alb.https_listener_arn 
 
   # 3. ECS Inputs
-  ecs_cluster_id          = module.ecs.ecs_cluster_arn # Or .ecs_cluster_id
+  # ERROR FIX: If your module call is 'module.ecs_cluster', use that name.
+  ecs_cluster_id          = module.ecs_cluster.ecs_cluster_arn 
   
-  # Assuming you have a security group defined specifically for ECS Fargate tasks in your networking/ecs module
-  ecs_service_security_group_id = module.networking.ecs_service_security_group_id 
+  # Check module.networking/outputs.tf or module.alb/outputs.tf for the exact name
+  ecs_service_security_group_id = module.networking.ecs_tasks_security_group_id
   
-  # Assuming you have a separate module or resource for your Task Definition
-  # If you create the Task Definition in the root or a separate module, reference its ARN here.
-  task_definition_arn = module.task_definition.fargate_task_definition_arn 
+  # ERROR FIX: Assuming you create a separate module for the task definition
+  # You must declare this module call elsewhere in main.tf first.
+  task_definition_arn = module.ecs_task_definition.fargate_task_definition_arn 
 }
 # 3. ALB Module
 module "alb" {

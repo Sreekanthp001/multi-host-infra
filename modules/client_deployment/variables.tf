@@ -6,7 +6,7 @@ variable "client_name" {
 }
 
 variable "domain_name" {
-  description = "The client's root domain name (e.g., 'venturemond.com'). Used for ALB routing."
+  description = "The client's root domain name (e.g., 'sree84s.site'). Used for ALB routing."
   type        = string
 }
 

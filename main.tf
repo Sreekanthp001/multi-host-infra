@@ -60,7 +60,7 @@ module "client_deployment" {
   alb_https_listener_arn = module.alb.listener_arn # Check outputs.tf for exact name
 
   # 3. ECS Inputs (Consolidated)
-  ecs_cluster_id          = module.ecs_cluster.cluster_arn # Check outputs.tf for exact name
+  ecs_cluster_id          = module.ecs_cluster.ecs_cluster_id # Check outputs.tf for exact name
   ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id # Check outputs.tf for exact name
   task_definition_arn = module.ecs_cluster.task_definition_arn # Check outputs.tf for exact name
 }

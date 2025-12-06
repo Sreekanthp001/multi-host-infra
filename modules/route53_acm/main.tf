@@ -6,7 +6,8 @@ resource "aws_route53_zone" "client_zone" {
 # 2. ACM Certificate Request
 # This certificate covers all domains and their wildcards (*.domain.com)
 resource "aws_acm_certificate" "client_cert" {
-  provider = aws.us_east_1
+  provider = aws
+  
   domain_name       = var.domain_names[0] 
   validation_method = "DNS"
 

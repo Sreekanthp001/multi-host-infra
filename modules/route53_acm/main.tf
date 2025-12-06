@@ -44,9 +44,9 @@ resource "aws_route53_record" "cert_validation_records" {
   ttl             = 60
   records         = [each.value.resource_record_value]
 
-  # 🔑 DEFINITIVE ZONE_ID LOOKUP FIX:
-  # This conditional checks for the "*. " prefix and uses substr/length 
-  # to safely retrieve the root domain name for the zone map lookup.
+  # 🔑 FINAL DEFINITIVE ZONE_ID LOOKUP FIX:
+  # This uses conditional logic (substr/length) to safely strip the "*. " prefix 
+  # if it exists, providing the clean root domain name for the zone lookup.
   zone_id = aws_route53_zone.client_zone[
     substr(each.value.domain_name, 0, 2) == "*." 
       ? substr(each.value.domain_name, 2, length(each.value.domain_name) - 2) 

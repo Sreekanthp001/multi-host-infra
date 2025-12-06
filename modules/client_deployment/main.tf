@@ -3,7 +3,7 @@
 # 1. ECS Target Group (Per Client)
 resource "aws_lb_target_group" "client_tg" {
   for_each = var.client_domains  
-  name        = "${var.client_name}-tg"
+  name        = "${each.key}-tg"
   port        = 8080 # Application port inside the container
   protocol    = "HTTP"
   vpc_id      = var.vpc_id

@@ -19,6 +19,10 @@ variable "private_subnets" {
   description = "List of private subnet IDs for ECS tasks."
   type        = list(string)
 }
+variable "client_domains" {
+  description = "Map of client names (key) to their root domain names (value) used for dynamic resource creation."
+  type        = map(string)
+}
 
 variable "ecs_cluster_id" {
   description = "The ARN/ID of the shared ECS cluster."

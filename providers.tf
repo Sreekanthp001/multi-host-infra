@@ -1,18 +1,20 @@
-
 terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 5.0" # Use a version compatible with your project
     }
   }
 }
 # Default Provider (Uses the variable from variables.tf)
+# providers.tf (In your ROOT directory)
+
+# Primary provider (your project region)
 provider "aws" {
-  region = var.aws_region
+  region = var.aws_region 
 }
 
-# Secondary Provider for ACM/CloudFront (MUST be us-east-1)
+# Secondary provider for ACM certificates (MUST be us-east-1)
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"

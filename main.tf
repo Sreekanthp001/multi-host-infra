@@ -43,24 +43,24 @@ module "route53_acm" {
 }
 
 # 5. Deploy Each Client Website (Scalable Loop)
+# main.tf (FINAL CORRECTIONS ON DEPENDENCIES)
+
+# ... (rest of your root main.tf code) ...
+
+# 5. Deploy Each Client Website (Scalable Loop)
 module "client_deployment" {
   for_each = var.client_domains
   source   = "./modules/client_deployment"
 
-  # Inputs derived from the for_each loop
-  client_name = each.key
-  domain_name = each.value
-  priority    = index(keys(var.client_domains), each.key) + 1
+  # ... other inputs (client_name, domain_name, priority, vpc_id, private_subnets) ...
 
-  # 1. Networking Inputs
-  vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnet_ids # Check outputs.tf for exact name
+  # 1. ALB/Listener Input (FIXED: Uses the exact name you provided in your outputs.tf)
+  alb_https_listener_arn = module.alb.alb_https_listener_arn 
 
-  # 2. ALB/Listener Input
-  alb_https_listener_arn = module.alb.listener_arn # Check outputs.tf for exact name
-
-  # 3. ECS Inputs (Consolidated)
-  ecs_cluster_id          = module.ecs_cluster.ecs_cluster_id # Check outputs.tf for exact name
-  ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id # Check outputs.tf for exact name
-  task_definition_arn = module.ecs_cluster.task_definition_arn # Check outputs.tf for exact name
+  # 2. ECS Inputs (FIXED: Uses the exact names you provided in your outputs.tf)
+  ecs_cluster_id          = module.ecs_cluster.ecs_cluster_id 
+  ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id
+  
+  # Task definition is the only one left. We assume this name matches the resource that is missing.
+  task_definition_arn = module.ecs_cluster.task_definition_arn 
 }

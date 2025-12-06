@@ -59,3 +59,44 @@ resource "aws_security_group" "ecs_tasks_sg" {
 
   tags = { Name = "${var.project_name}-ecs-tasks-sg" }
 }
+
+# modules/ecs/main.tf (ADD THIS BLOCK)
+
+# Defines the actual task definition used by the Fargate service
+resource "aws_ecs_task_definition" "main" {
+  family                   = "${var.project_name}-task"
+  cpu                      = 256
+  memory                   = 512
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  
+  # Assume you are using a placeholder role ARN from your outputs
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "client-container"
+      image     = "nginx:latest" # Change this to your ECR image URL
+      cpu       = 256
+      memory    = 512
+      essential = true
+      portMappings = [
+        {
+          containerPort = 8080 # This must match the port in client_deployment/main.tf
+          hostPort      = 8080
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/${var.project_name}-task"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+# (You may need to add aws_cloudwatch_log_group and aws_iam_role resources if they are missing)

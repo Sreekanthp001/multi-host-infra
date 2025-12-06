@@ -46,7 +46,9 @@ resource "aws_lb_listener_rule" "host_rule" {
 
 # 3. ECS Service (Per Client)
 resource "aws_ecs_service" "client_service" {
-  name            = "${var.client_name}-svc"
+  for_each = var.client_domains
+
+  name            = "${each.key}-svc"
   cluster         = var.ecs_cluster_id
   task_definition = var.task_definition_arn
   desired_count   = 2 

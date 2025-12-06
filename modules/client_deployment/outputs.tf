@@ -2,7 +2,7 @@
 
 output "target_group_arn" {
   description = "The ARN of the ECS Target Group created for this client."
-  value       = aws_lb_target_group.client_tg.arn
+  value       = aws_lb_target_group.client_tg["my_test_client"].arn
 }
 
 output "listener_rule_arn" {
@@ -12,5 +12,5 @@ output "listener_rule_arn" {
 
 output "ecs_service_name" {
   description = "The name of the ECS service deployed for this client."
-  value       = aws_ecs_service.client_service.name
+  value       = aws_ecs_service.client_service["my_test_client"].name
 }

@@ -28,7 +28,7 @@ resource "aws_lb_listener_rule" "host_rule" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.client_tg.arn
+    target_group_arn = aws_lb_target_group.client_tg[each.key].arn
   }
 
   # Condition 1: Match traffic for the root domain (e.g., venturemond.com)

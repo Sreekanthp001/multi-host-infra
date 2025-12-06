@@ -23,12 +23,6 @@ module "ecs_cluster" {
   alb_sg_id    = module.alb.alb_security_group_id 
 }
 
-module "ecs_task_definition" {
-  source = "./modules/ecs_task_definition" 
-  
-}
-
-
 # 5. Route53/ACM Module (Requires ALB outputs, runs in us-east-1)
 module "route53_acm" {
   source       = "./modules/route53_acm"

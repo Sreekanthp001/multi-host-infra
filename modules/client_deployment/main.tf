@@ -61,7 +61,7 @@ resource "aws_ecs_service" "client_service" {
   # Connects the ECS service to the specific Target Group
   load_balancer {
     target_group_arn = aws_lb_target_group.client_tg.arn
-    container_name   = "${var.client_name}-container" # Must match the name in your task definition
+    container_name   = "${each.key}-container" # Must match the name in your task definition
     container_port   = 8080
   }
 

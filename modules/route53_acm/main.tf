@@ -7,7 +7,7 @@ resource "aws_route53_zone" "client_zone" {
 # This certificate covers all domains and their wildcards (*.domain.com)
 resource "aws_acm_certificate" "client_cert" {
   provider = aws
-  
+
   domain_name       = var.domain_names[0] 
   validation_method = "DNS"
 
@@ -53,7 +53,7 @@ resource "aws_acm_certificate_validation" "cert_validation" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation_records : record.fqdn]
 
   timeouts {
-    create = "15m" 
+    create = "30m" 
   }
 }
 

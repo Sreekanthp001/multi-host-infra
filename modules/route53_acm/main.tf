@@ -1,7 +1,3 @@
-# modules/route53_acm/main.tf
-
-# 1. Hosted Zone Creation (One Zone per Domain)
-# We use a 'for_each' loop to handle multiple clients easily.
 resource "aws_route53_zone" "client_zone" {
   for_each = toset(var.domain_names) # var.domain_names contains ["venturemond.com", "sampleclient.com"]
   name     = each.key # The key of the map is "venturemond.com"
@@ -10,8 +6,7 @@ resource "aws_route53_zone" "client_zone" {
 # 2. ACM Certificate Request
 # This certificate covers all domains and their wildcards (*.domain.com)
 resource "aws_acm_certificate" "client_cert" {
-  # REMOVE 'provider = aws.us_east_1' HERE. 
-  # It will now implicitly use the provider passed from the root module.
+  provider = aws.us_east_1
   domain_name       = var.domain_names[0] 
   validation_method = "DNS"
 
@@ -23,7 +18,7 @@ resource "aws_acm_certificate" "client_cert" {
     create_before_destroy = true
   }
 
-  tags = { Name = "MultiClient-Wildcard-Cert" }
+  tags = { Name = "MultiClient-Wildcard-SAN-Cert" }
 }
 
 # 3. Create DNS Validation Records in Route53

@@ -54,7 +54,7 @@ module "client_deployment" {
 
   # 1. Networking Inputs
   vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnets # Check outputs.tf for exact name
+  private_subnets = module.networking.private_subnets_ids # Check outputs.tf for exact name
 
   # 2. ALB/Listener Input
   alb_https_listener_arn = module.alb.https_listener_arn # Check outputs.tf for exact name

@@ -27,12 +27,22 @@ resource "aws_acm_certificate" "client_cert" {
 }
 
 # 3. Create DNS Validation Records in Route53
+# 3. Create DNS Validation Records in Route53
 resource "aws_route53_record" "cert_validation_records" {
   for_each = {
     for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => dvo
   }
-  # ... other lines ...
 
+  allow_overwrite = true
+  # 🔑 RE-INSERTED REQUIRED ARGUMENTS
+  name    = each.value.resource_record_name
+  type    = each.value.resource_record_type
+  records = [each.value.resource_record_value]
+  ttl     = 60
+
+  # 🔑 FINAL DEFINITIVE ZONE_ID LOOKUP FIX:
+  # This uses conditional logic (substr/length) to safely strip the "*. " prefix
+  # if it exists, providing the clean root domain name for the zone map lookup.
   zone_id = aws_route53_zone.client_zone[
     substr(each.value.domain_name, 0, 2) == "*." 
       ? substr(each.value.domain_name, 2, length(each.value.domain_name) - 2) 

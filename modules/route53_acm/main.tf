@@ -32,13 +32,36 @@ resource "aws_acm_certificate" "client_cert" {
 
 # 3. Create DNS Validation Records in Route53
 # This resource automatically creates the CNAME records required by ACM
+# modules/route53_acm/main.tf
+
+# ... (lines 1-36 remain the same)
+
+# 3. Create DNS Validation Records in Route53
 resource "aws_route53_record" "cert_validation_records" {
   for_each = {
     for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
+      name  = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
-      zone_id = aws_route53_zone.client_zone[dvo.domain_name].zone_id
+      
+      root_domain = coalesce(
+        lookup(aws_route53_zone.client_zone, dvo.domain_name, null),
+        lookup(aws_route53_zone.client_zone, replace(dvo.domain_name, /^\*\./, ""), null)
+      )
+
+      zone_id = aws_route53_zone.client_zone[
+        # Conditional to handle the root domain vs. wildcard domain
+        contains(var.domain_names, dvo.domain_name) ? dvo.domain_name : split(".", dvo.domain_name)[1] == "com" ? dvo.domain_name : join(".", slice(split(".", dvo.domain_name), length(split(".", dvo.domain_name)) - 2, length(split(".", dvo.domain_name))))
+      ].zone_id
+      
+      # Simplified and most reliable fix for this specific case (assuming only TLDs like .com, .net, etc.)
+      root_domain_key = replace(dvo.domain_name, /^\*\./, "")
+
+      # Final Corrected Line
+      zone_id = aws_route53_zone.client_zone[
+          # This extracts "example.com" from "*.example.com" or keeps "example.com"
+          replace(dvo.domain_name, /^\*\./, "") 
+      ].zone_id
     }
   }
 

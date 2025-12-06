@@ -23,7 +23,7 @@ module "ecs_cluster" {
   source       = "./modules/ecs"
   project_name = var.project_name
   vpc_id       = module.networking.vpc_id
-  alb_sg_id    = module.alb.alb_security_group_id # Check outputs.tf for exact name
+  alb_sg_id    = module.alb.alb_sg_id # Check outputs.tf for exact name
 }
 
 # 4. Route53/ACM Module (Runs in us-east-1, depends on ALB outputs)
@@ -57,7 +57,7 @@ module "client_deployment" {
   private_subnets = module.networking.private_subnet_ids # Check outputs.tf for exact name
 
   # 2. ALB/Listener Input
-  alb_https_listener_arn = module.alb.https_listener_arn # Check outputs.tf for exact name
+  alb_https_listener_arn = module.alb.listener_arn # Check outputs.tf for exact name
 
   # 3. ECS Inputs (Consolidated)
   ecs_cluster_id          = module.ecs_cluster.cluster_arn # Check outputs.tf for exact name

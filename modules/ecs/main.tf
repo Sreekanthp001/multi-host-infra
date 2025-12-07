@@ -90,13 +90,21 @@ resource "aws_ecs_task_definition" "main" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/${var.project_name}-task"
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
+          "awslogs-group": "${aws_cloudwatch_log_group.client_log_group.name}", 
+          "awslogs-region": "us-east-1", // మీ AWS ప్రాంతం
+          "awslogs-stream-prefix": "ecs"
         }
       }
     }
   ])
 }
 
-# (You may need to add aws_cloudwatch_log_group and aws_iam_role resources if they are missing)
+resource "aws_cloudwatch_log_group" "client_log_group" {
+  name = "/ecs/client-app" 
+
+  retention_in_days = 30 
+  
+  tags = {
+    Name = "ClientAppLogGroup"
+  }
+}

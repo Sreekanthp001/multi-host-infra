@@ -4,8 +4,7 @@ name: 'Build and Push Frontend Image to ECR'
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
     paths:
       - 'src/frontend/**' 
 

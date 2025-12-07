@@ -1,11 +1,13 @@
+# .github/workflows/docker-push.yml
+
 name: 'Build and Push Frontend Image to ECR'
 
 on:
   push:
     branches:
-      - main  
+      - main
     paths:
-      - 'src/frontend/**' 
+      - 'src/frontend/**' # src/frontend లో మాత్రమే మార్పులు వస్తే
 
 env:
   AWS_REGION: us-east-1
@@ -37,7 +39,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-        run: |
+        run: |  
           echo "Building image in src/frontend/"
           docker build -t $IMAGE_URI ./src/frontend/
           docker push $IMAGE_URI

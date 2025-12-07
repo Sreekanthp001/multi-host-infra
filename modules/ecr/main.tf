@@ -16,14 +16,15 @@ resource "aws_ecr_lifecycle_policy" "main" {
   policy     = jsonencode({
     rules = [
       {
-        action = {
-          type = "expire"
-        }
-        selection = {
-          tagStatus   = "untagged"
-          countType   = "sinceImagePushed"
-          countUnit   = "days"
-          countNumber = 7
+        "rulePriority" : 1,
+        "action" = {
+          "type" = "expire"
+        },
+        "selection" = {
+          "tagStatus"   = "untagged"
+          "countType"   = "sinceImagePushed"
+          "countUnit"   = "days"
+          "countNumber" = 7
         }
       }
     ]

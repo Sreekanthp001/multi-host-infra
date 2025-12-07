@@ -2,14 +2,15 @@
 
 name: 'Build and Push Frontend Image to ECR'
 
-
+# This block defines when the workflow runs.
+# 'on' must be flush left.
 on:
-  push:
+  push: # Indented 2 spaces from 'on'
     branches:
-      - main  
+      - main  # Indented 4 spaces from 'on'
     paths:
       - 'src/frontend/**' 
-      
+
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: frontend-app

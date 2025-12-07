@@ -15,7 +15,7 @@ module "alb" {
   public_subnet_ids   = module.networking.public_subnet_ids # Check outputs.tf for exact name
   
   # 🔑 FIX: Provide the required ACM ARN argument, referencing the output of the ACM module
-  acm_certificate_arn = module.route53_acm.acm_certificate_arn 
+  acm_certificate_arn = module.route53_acm.acm_certificate_arn
 }
 
 # 3. ECS Cluster Module (Includes Cluster, Task Definition, and SG logic)

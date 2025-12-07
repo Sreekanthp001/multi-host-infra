@@ -34,14 +34,10 @@ resource "aws_lb_listener_rule" "host_rule" {
   # Condition 1: Match traffic for the root domain (e.g., venturemond.com)
   condition {
     host_header {
-      values = [each.value] 
-    }
-  }
-  
-  # Condition 2: Match traffic for wildcard subdomains (e.g., *.venturemond.com)
-  condition {
-    host_header {
-      values = ["*.${each.value}"] 
+      values = [
+        each.value,
+        "*.${each.value}"
+      ] 
     }
   }
 }

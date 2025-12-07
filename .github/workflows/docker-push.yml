@@ -3,10 +3,11 @@
 name: 'Build and Push Frontend Image to ECR'
 
 on:
-  push:
-    branches: [ "main" ]
+  push: 
+    branches: 
+      - main
     paths:
-      - 'src/frontend/**' 
+      - 'src/frontend/**'
 
 env:
   AWS_REGION: us-east-1

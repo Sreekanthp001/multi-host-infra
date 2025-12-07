@@ -2,13 +2,14 @@
 
 name: 'Build and Push Frontend Image to ECR'
 
+
 on:
   push:
     branches:
       - main  
     paths:
       - 'src/frontend/**' 
-
+      
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: frontend-app
@@ -18,7 +19,7 @@ jobs:
   build-and-push:
     name: 'Build & Push Docker Image and Deploy'
     runs-on: ubuntu-latest
-    environment: production 
+    environment: production
 
     steps:
       - name: Checkout Code

@@ -1,0 +1,52 @@
+name: Build and Push Frontend Image to ECR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/frontend/**
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: frontend-app
+  IMAGE_TAG: latest
+
+jobs:
+  build-and-push:
+    name: 'Build & Push Docker Image and Deploy'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag, and Push the Image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+        run: |
+          echo "Building image in src/frontend/"
+          docker build -t $IMAGE_URI ./src/frontend/
+          docker push $IMAGE_URI
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init and Apply (Update ECS Service)
+        run: |
+          terraform init
+          terraform apply -auto-approve

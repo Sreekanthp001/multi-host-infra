@@ -1,9 +1,7 @@
-# .github/workflows/docker-push.yml
-
 name: 'Build and Push Frontend Image to ECR'
 
 on:
-  push: 
+  push:
     branches: 
       - main
     paths:

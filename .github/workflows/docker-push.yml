@@ -5,9 +5,9 @@ name: 'Build and Push Frontend Image to ECR'
 on:
   push:
     branches:
-      - main
+      - main  
     paths:
-      - 'src/frontend/**' # src/frontend లో మాత్రమే మార్పులు వస్తే
+      - 'src/frontend/**' 
 
 env:
   AWS_REGION: us-east-1
@@ -16,8 +16,9 @@ env:
 
 jobs:
   build-and-push:
-    name: 'Build & Push Docker Image'
+    name: 'Build & Push Docker Image and Deploy'
     runs-on: ubuntu-latest
+    environment: production 
 
     steps:
       - name: Checkout Code
@@ -39,13 +40,15 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-        run: |  
+        run: |
           echo "Building image in src/frontend/"
           docker build -t $IMAGE_URI ./src/frontend/
           docker push $IMAGE_URI
 
-      - name: Terraform Apply (Re-run to update ECS Service)
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init and Apply (Update ECS Service)
         run: |
           terraform init
           terraform apply -auto-approve

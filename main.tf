@@ -18,6 +18,11 @@ module "alb" {
   acm_certificate_arn = module.route53_acm.acm_certificate_arn
 }
 
+module "ecr" {
+  source          = "./modules/ecr"
+  repository_name = "frontend-app" # మీ Docker Image పేరు
+}
+
 # 3. ECS Cluster Module (Includes Cluster, Task Definition, and SG logic)
 module "ecs_cluster" {
   source       = "./modules/ecs"
@@ -25,6 +30,7 @@ module "ecs_cluster" {
   aws_region = var.aws_region
   vpc_id       = module.networking.vpc_id
   alb_sg_id    = module.alb.alb_sg_id # Check outputs.tf for exact name
+  ecr_repository_url = module.ecr.repository_url
 }
 
 # 4. Route53/ACM Module (Runs in us-east-1, depends on ALB outputs)
@@ -66,3 +72,5 @@ module "client_deployment" {
   ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id
   task_definition_arn           = module.ecs_cluster.task_definition_arn 
 }
+
+

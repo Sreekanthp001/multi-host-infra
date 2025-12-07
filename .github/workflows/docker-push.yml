@@ -2,12 +2,10 @@
 
 name: 'Build and Push Frontend Image to ECR'
 
-# This block defines when the workflow runs.
-# 'on' must be flush left.
 on:
-  push: # Indented 2 spaces from 'on'
+  push:
     branches:
-      - main  # Indented 4 spaces from 'on'
+      - main
     paths:
       - 'src/frontend/**' 
 

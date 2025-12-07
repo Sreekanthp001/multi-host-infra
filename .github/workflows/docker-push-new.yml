@@ -40,9 +40,13 @@ jobs:
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
         run: |
           echo "Building image in src/frontend/"
-          docker buildx -t $IMAGE_URI -f ./src/frontend/Dockerfile . 
-          
-          docker push $IMAGE_URI
+
+          docker buildx build \
+            -t $IMAGE_URI \
+            -f src/frontend/Dockerfile \
+            src/frontend \
+            --push
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

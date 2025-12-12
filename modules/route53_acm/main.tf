@@ -96,15 +96,18 @@ resource "aws_route53_record" "ses_dkim_records" {
   
   count = local.dkim_record_count
 
+  
   token_value = local.all_dkim_tokens[count.index]
+  
   
   client_domain = element(values(var.client_domains), floor(count.index / 3))
 
-    zone_id = aws_route53_zone.client_zone[self.client_domain].zone_id
-  name    = "${self.token_value}._domainkey"
+  
+  zone_id = aws_route53_zone.client_zone[client_domain].zone_id 
+  name    = "${token_value}._domainkey"                           
   type    = "CNAME"
   ttl     = 600
-  records = ["${self.token_value}.dkim.amazonses.com"]
+  records = ["${token_value}.dkim.amazonses.com"]                  
 }
 
 # 8. SES MX Record (Incoming Mail)

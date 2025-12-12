@@ -9,6 +9,7 @@ resource "aws_ecr_repository" "main" {
   tags = {
     Name = var.repository_name
   }
+  force_delete = true
 }
 
 resource "aws_ecr_lifecycle_policy" "main" {

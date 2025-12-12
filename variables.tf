@@ -16,7 +16,7 @@ variable "client_domains" {
   type = map(string)
   default = {
     "sree84s-prod"  = "sree84s.site",     
-    "sree84s-dev"   = "dev.sree84s.site"  
+    #"sree84s-dev"   = "dev.sree84s.site"  
   }
 }
 # Add other global variables here as needed

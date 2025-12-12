@@ -83,8 +83,8 @@ resource "aws_ecs_task_definition" "main" {
       essential = true
       portMappings = [
         {
-          containerPort = 8080 # This must match the port in client_deployment/main.tf
-          hostPort      = 8080
+          containerPort = 80 # This must match the port in client_deployment/main.tf
+          hostPort      = 80
         }
       ]
       logConfiguration = {

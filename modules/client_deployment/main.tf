@@ -4,7 +4,7 @@
 resource "aws_lb_target_group" "client_tg" {
   for_each = var.client_domains  
   name        = "${each.key}-tg"
-  port        = 8080 # Application port inside the container
+  port        = 80 # Application port inside the container
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -62,7 +62,7 @@ resource "aws_ecs_service" "client_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.client_tg[each.key].arn
     container_name   = "client-container" # Must match the name in your task definition
-    container_port   = 8080
+    container_port   = 80 
   }
 
   lifecycle {

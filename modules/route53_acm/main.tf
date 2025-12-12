@@ -1,13 +1,5 @@
 locals {
-  
-  dkim_records_map = merge([
-    for k, tokens in var.dkim_tokens : {
-      for i, token in tokens : "${k}_dkim_${i}" => { 
-        token_value   = token
-        client_domain = var.client_domains[k] 
-      }
-    }
-  ]...)
+  all_dkim_tokens = flatten(values(var.dkim_tokens))
 }
 resource "aws_route53_zone" "client_zone" {
   for_each = toset(var.domain_names) 
@@ -96,25 +88,24 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
-
-# 7. SES DKIM CNAME Records (FINAL STABLE SOLUTION)
+# 7. SES DKIM CNAME Records (THE FINAL FIX - NO INTERMEDIATE VARS)
 resource "aws_route53_record" "ses_dkim_records" {
   
-  count = length(var.client_domains) * 3
+  count = length(local.all_dkim_tokens)
 
   
-  tokens_flat = flatten(values(var.dkim_tokens))
-  token_value = element(self.tokens_flat, count.index)
+  domain_name_calc = element(values(var.client_domains), floor(count.index / 3))
   
-  
-  client_domain = element(values(var.client_domains), floor(count.index / 3))
 
-  # DNS 
-  zone_id = aws_route53_zone.client_zone[self.client_domain].zone_id
-  name    = "${self.token_value}._domainkey"
+  token_value_calc = local.all_dkim_tokens[count.index]
+
+
+  zone_id = aws_route53_zone.client_zone[domain_name_calc].zone_id
+  
+  name    = "${token_value_calc}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  records = ["${self.token_value}.dkim.amazonses.com"]
+  records = ["${token_value_calc}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

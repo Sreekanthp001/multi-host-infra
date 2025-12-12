@@ -1,18 +1,21 @@
 locals {
+  # అన్ని DKIM టోకెన్లను ఒకే ఫ్లాట్ లిస్ట్‌గా చేస్తుంది.
+  # ఇది DKIM CNAME రికార్డుల లూపింగ్ కోసం count ను స్థిరంగా ఉంచుతుంది.
   all_dkim_tokens = flatten(values(var.dkim_tokens))
 }
+
+# 1. ప్రతి డొమైన్ కోసం Route 53 Hosted Zone ను సృష్టిస్తుంది
 resource "aws_route53_zone" "client_zone" {
-  for_each = toset(var.domain_names) 
-  name     = each.key 
+  for_each = toset(var.domain_names)
+  name     = each.key
 }
 
 # 2. ACM Certificate Request
-# This certificate covers all domains and their wildcards (*.domain.com)
 resource "aws_acm_certificate" "client_cert" {
   provider = aws
 
-  domain_name       = var.domain_names[0] 
-  validation_method = "DNS"
+  domain_name               = var.domain_names[0] 
+  validation_method         = "DNS"
 
   subject_alternative_names = flatten([
     for domain in var.domain_names : [domain, "*.${domain}"]
@@ -26,32 +29,27 @@ resource "aws_acm_certificate" "client_cert" {
 }
 
 # 3. Create DNS Validation Records in Route53
-# 3. Create DNS Validation Records in Route53
 resource "aws_route53_record" "cert_validation_records" {
   for_each = {
     for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => dvo
   }
 
   allow_overwrite = true
-  # 🔑 RE-INSERTED REQUIRED ARGUMENTS
-  name    = each.value.resource_record_name
-  type    = each.value.resource_record_type
-  records = [each.value.resource_record_value]
-  ttl     = 60
+  name            = each.value.resource_record_name
+  type            = each.value.resource_record_type
+  records         = [each.value.resource_record_value]
+  ttl             = 60
 
-  # 🔑 FINAL DEFINITIVE ZONE_ID LOOKUP FIX:
-  # This uses conditional logic (substr/length) to safely strip the "*. " prefix
-  # if it exists, providing the clean root domain name for the zone map lookup.
+  # Zone ID కోసం రూట్ డొమైన్ పేరును లెక్కించే లాజిక్
   zone_id = aws_route53_zone.client_zone[
     substr(each.value.domain_name, 0, 2) == "*." 
       ? substr(each.value.domain_name, 2, length(each.value.domain_name) - 2) 
       : each.value.domain_name
   ].zone_id
 }
+
 # 4. Wait for ACM Validation to Complete
-# This is a critical blocker. Terraform will pause here until the certificate status is 'ISSUED'.
 resource "aws_acm_certificate_validation" "cert_validation" {
-  # REMOVE 'provider = aws.us_east_1' HERE for the same reason
   certificate_arn         = aws_acm_certificate.client_cert.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation_records : record.fqdn]
 
@@ -61,7 +59,6 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 }
 
 # 5. Route 53 A Records to ALB
-# Maps each domain to the ALB DNS name using an Alias record.
 resource "aws_route53_record" "alb_alias" {
   for_each = toset(var.domain_names)
   zone_id  = aws_route53_zone.client_zone[each.key].zone_id
@@ -70,8 +67,8 @@ resource "aws_route53_record" "alb_alias" {
   type = "A"
 
   alias {
-    name                   = var.alb_dns_name
-    zone_id                = var.alb_zone_id
+    name                 = var.alb_dns_name
+    zone_id              = var.alb_zone_id
     evaluate_target_health = true
   }
 }
@@ -85,27 +82,28 @@ resource "aws_route53_record" "ses_verification_txt" {
   type    = "TXT"
   ttl     = 600
   
+  # verification_tokens మాడ్యూల్ అవుట్‌పుట్ నుండి వస్తుంది
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records (THE FINAL FIX - NO INTERMEDIATE VARS)
+# 7. SES DKIM CNAME Records (The Final Stable Fix)
 resource "aws_route53_record" "ses_dkim_records" {
   
+  # local.all_dkim_tokens యొక్క మొత్తం సంఖ్యపై లూప్ చేస్తుంది
   count = length(local.all_dkim_tokens)
 
-  
-  domain_name_calc = element(values(var.client_domains), floor(count.index / 3))
-  
+  # డొమైన్ పేరును లెక్కించే లాజిక్ (count.index ను 3 తో భాగించి)
+  domain_name = element(values(var.client_domains), floor(count.index / 3))
+  # టోకెన్ విలువను లెక్కించే లాజిక్
+  token_value = local.all_dkim_tokens[count.index]
 
-  token_value_calc = local.all_dkim_tokens[count.index]
-
-
-  zone_id = aws_route53_zone.client_zone[domain_name_calc].zone_id
+  zone_id = aws_route53_zone.client_zone[domain_name].zone_id
   
-  name    = "${token_value_calc}._domainkey"
+  name    = "${token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  records = ["${token_value_calc}.dkim.amazonses.com"]
+  
+  records = ["${token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)
@@ -117,5 +115,6 @@ resource "aws_route53_record" "client_mx_record" {
   type    = "MX"
   ttl     = 300
   
+  # ses_mx_record మాడ్యూల్ అవుట్‌పుట్ నుండి వస్తుంది
   records = [var.ses_mx_record] 
 }

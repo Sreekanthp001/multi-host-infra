@@ -117,6 +117,8 @@ resource "aws_s3_bucket" "ses_inbound_bucket" {
 # 🛑 పరిష్కారం: SES కు PutObject అనుమతి ఇవ్వడానికి బకెట్ పాలసీని సరిచేయడం
 resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
   bucket = aws_s3_bucket.ses_inbound_bucket.id
+  
+  // Policy ని jsonencode ద్వారా నిర్వచించడం.
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -126,12 +128,19 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
           Service = "ses.amazonaws.com"
         }
         Action = "s3:PutObject" 
-        Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
+        
+        // ✅ 1. S3 Resource ARN సరిగా ఉంది.
+        Resource = [ 
+          "${aws_s3_bucket.ses_inbound_bucket.arn}/*", 
+        ]
+        
         Condition = {
           StringEquals = {
-            "aws:SourceAccount" : "535462128585",
-            # 🛑 పరిష్కారం: ARN ను స్ట్రింగ్ interpolation లో ఇవ్వడం వలన JSON లో సరైన ఫార్మాట్ అవుతుంది.
-            "aws:SourceArn" : "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:receipt-rule-set/multi-client-rules"
+            "aws:SourceAccount" : "535462128585", 
+            
+            // ✅ 2. తుది పరిష్కారం: SES Rule Set యొక్క ఖచ్చితమైన ARN ను ఉపయోగించాలి.
+            // aws:SourceArn కోసం AWS Console లోని ARN ఫార్మాట్‌ను స్ట్రింగ్ ఇంటర్‌పోలేషన్‌తో సరిదిద్దాం.
+            "aws:SourceArn" : "arn:aws:ses:${data.aws_region.current.name}:535462128585:receipt-rule-set/multi-client-rules"
           }
         }
       },

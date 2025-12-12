@@ -14,8 +14,11 @@ module "alb" {
   vpc_id              = module.networking.vpc_id
   public_subnet_ids   = module.networking.public_subnet_ids # Check outputs.tf for exact name
   
-  # 🔑 FIX: Provide the required ACM ARN argument, referencing the output of the ACM module
+  # 🔑 FIX 1: ACM Certificate ARN ను జోడించండి (ALB Listener కు అవసరం)
   acm_certificate_arn = module.route53_acm.acm_certificate_arn
+
+  # 🔑 FIX 2: ACM Validation Resource ను module output ద్వారా పాస్ చేయండి (depends_on కోసం)
+  acm_validation_resource = module.route53_acm.acm_validation_resource
 }
 
 module "ecr" {

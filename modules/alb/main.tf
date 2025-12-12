@@ -63,6 +63,10 @@ resource "aws_lb_listener" "https" {
       status_code  = "404"
     }
   }
+  
+  depends_on = [
+    var.acm_validation_resource 
+  ]
 }
 
 # 4. HTTP Listener (To redirect HTTP traffic to HTTPS)

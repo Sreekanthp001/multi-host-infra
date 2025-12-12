@@ -17,15 +17,14 @@ resource "aws_ses_receipt_rule_set" "main_rule_set" {
 }
 
 resource "aws_ses_receipt_rule" "forwarding_rule" {
-  for_each          = var.client_domains
-  name              = "${each.key}-forwarding-rule"
-  rule_set_name     = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
-  enabled           = true
-  scan_enabled      = true
+  for_each            = var.client_domains
+  name                = "${each.key}-forwarding-rule"
+  rule_set_name       = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
+  enabled             = true
+  scan_enabled        = true
 
-  recipients        = [each.value]
+  recipients          = [each.value]
 
-  # S3 యాక్షన్, ఇప్పుడు role_arn లేదు
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
     position    = 1 
@@ -33,8 +32,8 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
 }
 
 resource "aws_ses_domain_mail_from" "client_mail_from" {
-  for_each         = var.client_domains
-  domain           = aws_ses_domain_identity.client_ses_identity[each.key].domain 
+  for_each          = var.client_domains
+  domain            = aws_ses_domain_identity.client_ses_identity[each.key].domain 
   
   mail_from_domain = "mail.${each.value}" 
 }
@@ -105,8 +104,7 @@ resource "aws_s3_bucket" "ses_inbound_bucket" {
   }
 }
 
-# SES ను S3 బకెట్‌లో మెయిల్స్ వేయడానికి అనుమతించే బకెట్ పాలసీ.
-# (IAM Role రిసోర్స్‌లను తొలగించి, దీన్ని మాత్రమే ఉంచుతున్నాము)
+# 🛑 పరిష్కారం: SES కు PutObject అనుమతి ఇవ్వడానికి బకెట్ పాలసీని సరిచేయడం
 resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
   bucket = aws_s3_bucket.ses_inbound_bucket.id
   policy = jsonencode({
@@ -117,12 +115,14 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
         Principal = {
           Service = "ses.amazonaws.com"
         }
-        Action = "s3:PutObject"
+        # 🛑 పరిష్కారం: PutObject యాక్షన్‌ను నిర్ధారించండి
+        Action = "s3:PutObject" 
         Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
         Condition = {
           StringEquals = {
+            # 🛑 పరిష్కారం: aws:SourceArn ను aws_ses_receipt_rule_set.main_rule_set.arn కు మార్చండి
             "aws:SourceAccount" : "535462128585",
-            "aws:SourceArn" : "arn:aws:ses:us-east-1:535462128585:receipt-rule-set/multi-client-rules"
+            "aws:SourceArn" : aws_ses_receipt_rule_set.main_rule_set.arn # <--- రిఫరెన్స్ ను సరిచేశాం
           }
         }
       },

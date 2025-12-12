@@ -18,3 +18,9 @@ output "name_servers" {
     for k, v in aws_route53_zone.client_zone_final : v.name => v.name_servers
   }
 }
+
+output "acm_validation_resource" {
+  description = "The ACM validation resource object for dependency chaining."
+  # aws_acm_certificate_validation.cert_validation రిసోర్స్ ఆబ్జెక్ట్ ను పాస్ చేస్తుంది
+  value = aws_acm_certificate_validation.cert_validation
+}

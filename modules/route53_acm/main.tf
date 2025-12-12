@@ -1,7 +1,9 @@
+data "aws_region" "current" {}
+
 locals {
   # 1. అన్ని DKIM టోకెన్లను ఒకే ఫ్లాట్ లిస్ట్‌గా చేస్తుంది.
   all_dkim_tokens = flatten(values(var.dkim_tokens))
-  
+
   # 2. DKIM రికార్డుల డేటా లిస్ట్‌ను సృష్టిస్తుంది
   dkim_records_data = flatten([
     for k, domain_name in var.client_domains : [
@@ -23,8 +25,8 @@ resource "aws_route53_zone" "client_zone" {
 resource "aws_acm_certificate" "client_cert" {
   provider = aws
 
-  domain_name               = var.domain_names[0] 
-  validation_method         = "DNS"
+  domain_name             = var.domain_names[0] 
+  validation_method       = "DNS"
 
   subject_alternative_names = flatten([
     for domain in var.domain_names : [domain, "*.${domain}"]
@@ -76,8 +78,8 @@ resource "aws_route53_record" "alb_alias" {
   type = "A"
 
   alias {
-    name                 = var.alb_dns_name
-    zone_id              = var.alb_zone_id
+    name             = var.alb_dns_name
+    zone_id          = var.alb_zone_id
     evaluate_target_health = true
   }
 }
@@ -85,35 +87,35 @@ resource "aws_route53_record" "alb_alias" {
 # 6. SES Verification TXT Record
 resource "aws_route53_record" "ses_verification_txt" {
   for_each = var.client_domains
-  
+
   zone_id = aws_route53_zone.client_zone[each.value].zone_id 
   name    = "_amazonses.${each.value}"
   type    = "TXT"
   ttl     = 600
-  
+
   # verification_tokens మాడ్యూల్ అవుట్‌పుట్ నుండి వస్తుంది
   records = [var.verification_tokens[each.key]] 
 }
 
 # 7. SES DKIM CNAME Records (THE FINAL GUARANTEED SYNTAX FIX)
 resource "aws_route53_record" "ses_dkim_records" {
-  
+
   # count ఇప్పుడు స్థిరంగా లెక్కించబడుతుంది
   count = length(local.dkim_records_data)
 
   # ప్రతి ఆట్రిబ్యూట్‌లోనూ పూర్తి లెక్కింపును ఉపయోగిస్తున్నాము
-  
+
   # డొమైన్ పేరును లెక్కించే లాజిక్‌ను నేరుగా zone_id లో ఉపయోగిస్తున్నాము
   zone_id = aws_route53_zone.client_zone[
     local.dkim_records_data[count.index].domain_name
   ].zone_id
-  
+
   # టోకెన్ విలువను లెక్కించే లాజిక్‌ను name లో ఉపయోగిస్తున్నాము
   name    = "${local.dkim_records_data[count.index].token_value}._domainkey"
-  
+
   type    = "CNAME"
   ttl     = 600
-  
+
   # టోకెన్ విలువను లెక్కించే లాజిక్‌ను records లో ఉపయోగిస్తున్నాము
   records = ["${local.dkim_records_data[count.index].token_value}.dkim.amazonses.com"]
 }
@@ -121,17 +123,17 @@ resource "aws_route53_record" "ses_dkim_records" {
 # 8. SES MX Record (Incoming Mail)
 resource "aws_route53_record" "client_mx_record" {
   for_each = var.client_domains
-  
+
   zone_id = aws_route53_zone.client_zone[each.value].zone_id 
   name    = each.value
   type    = "MX"
   ttl     = 300
-  
+
   # ses_mx_record మాడ్యూల్ అవుట్‌పుట్ నుండి వస్తుంది
   records = [var.ses_mx_record] 
 }
 
-# 1. SPF Record (TXT) - Root Domain కోసం
+# 9. SPF Record (TXT) - Root Domain కోసం (FIXED: Removed comment)
 # v=spf1 include:amazonses.com ~all
 resource "aws_route53_record" "client_spf_record" {
   for_each = var.client_domains
@@ -143,10 +145,9 @@ resource "aws_route53_record" "client_spf_record" {
   records = [
     "v=spf1 include:amazonses.com ~all",
   ]
-  comment = "SPF record for AWS SES"
 }
 
-# 2. DMARC Record (TXT)
+# 10. DMARC Record (TXT) (FIXED: Removed comment)
 # p=none అనేది మానిటరింగ్ మోడ్, deliverability ను పరీక్షించడానికి ఉత్తమం.
 resource "aws_route53_record" "client_dmarc_record" {
   for_each = var.client_domains
@@ -159,26 +160,24 @@ resource "aws_route53_record" "client_dmarc_record" {
     # rua=mailto:dmarc-reports@${each.key} రిపోర్ట్‌లను స్వీకరించే చిరునామా.
     "v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.key}; pct=100; adkim=r; aspf=r",
   ]
-  comment = "DMARC record"
 }
 
 
-# 3. Custom MAIL FROM కోసం MX రికార్డు (ses_configuration మాడ్యూల్ నుండి విలువను తీసుకుంటుంది)
+# 11. Custom MAIL FROM కోసం MX రికార్డు (ses_configuration మాడ్యూల్ నుండి విలువను తీసుకుంటుంది) (FIXED: Removed comment)
 resource "aws_route53_record" "client_mail_from_mx" {
   for_each = var.client_domains
 
   zone_id = aws_route53_zone.client_zone[each.key].zone_id
-  # ఇక్కడ మనం mail_from_domains వేరియబుల్ నుండి 'mail.sree84s.site' తీసుకుంటాము
   name    = var.mail_from_domains[each.key]
   type    = "MX"
   ttl     = 600
   records = [
-    "10 feedback-smtp.${var.aws_region}.amazonaws.com",
+    # var.aws_region కు బదులుగా data.aws_region.current.name ను ఉపయోగిస్తున్నాము
+    "10 feedback-smtp.${data.aws_region.current.name}.amazonaws.com", 
   ]
-  comment = "MX record for Custom MAIL FROM domain verification"
 }
 
-# 4. Custom MAIL FROM కోసం SPF TXT రికార్డు
+# 12. Custom MAIL FROM కోసం SPF TXT రికార్డు (FIXED: Removed comment)
 resource "aws_route53_record" "client_mail_from_txt" {
   for_each = var.client_domains
 
@@ -189,5 +188,4 @@ resource "aws_route53_record" "client_mail_from_txt" {
   records = [
     "v=spf1 include:amazonses.com ~all",
   ]
-  comment = "SPF record for Custom MAIL FROM domain"
 }

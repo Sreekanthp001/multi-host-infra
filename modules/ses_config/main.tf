@@ -115,14 +115,13 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
         Principal = {
           Service = "ses.amazonaws.com"
         }
-        # 🛑 పరిష్కారం: PutObject యాక్షన్‌ను నిర్ధారించండి
         Action = "s3:PutObject" 
         Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
         Condition = {
           StringEquals = {
-            # 🛑 పరిష్కారం: aws:SourceArn ను aws_ses_receipt_rule_set.main_rule_set.arn కు మార్చండి
             "aws:SourceAccount" : "535462128585",
-            "aws:SourceArn" : aws_ses_receipt_rule_set.main_rule_set.arn # <--- రిఫరెన్స్ ను సరిచేశాం
+            # 🛑 పరిష్కారం: ARN ను స్ట్రింగ్ interpolation లో ఇవ్వడం వలన JSON లో సరైన ఫార్మాట్ అవుతుంది.
+            "aws:SourceArn" : "${aws_ses_receipt_rule_set.main_rule_set.arn}" 
           }
         }
       },

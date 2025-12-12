@@ -26,15 +26,16 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   recipients      = [each.value]
 }
 
-# SES Custom MAIL FROM (FIXED: Resource name changed to aws_ses_identity_mail_from, and 'domain' changed to 'identity')
+# SES Custom MAIL FROM (FIXED: Using each.value (domain name) instead of each.key (client key))
 resource "aws_ses_domain_mail_from" "client_mail_from" {
   for_each         = var.client_domains
   domain           = aws_ses_domain_identity.client_ses_identity[each.key].domain 
-  mail_from_domain = "mail.${each.key}" 
+  # FIX: ఇక్కడ each.key కు బదులు each.value ను ఉపయోగించండి.
+  mail_from_domain = "mail.${each.value}" 
 }
 
 output "mail_from_domains" {
   description = "The Mail From domains configured for SES"
-  # FIX: అవుట్‌పుట్ రిసోర్స్ పేరును aws_ses_domain_mail_from కు మార్చడం.
+  # FIX: ఇక్కడ కూడా each.value ను ఉపయోగించండి.
   value       = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }
 }

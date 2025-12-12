@@ -72,3 +72,47 @@ resource "aws_route53_record" "alb_alias" {
     evaluate_target_health = true
   }
 }
+
+# 6. SES Verification TXT Record
+resource "aws_route53_record" "ses_verification_txt" {
+  for_each = var.client_domains
+  
+  zone_id = aws_route53_zone.client_zone[each.value].zone_id 
+  name    = "_amazonses.${each.value}"
+  type    = "TXT"
+  ttl     = 600
+  
+  records = [var.verification_tokens[each.key]] 
+}
+
+# 7. SES DKIM CNAME Records
+resource "aws_route53_record" "ses_dkim_records" {
+  for_each = merge([
+    for k, tokens in var.dkim_tokens : {
+      for i, token in tokens : "${k}_dkim_${i}" => { 
+        token      = token
+        domain_key = k
+      }
+    }
+  ]...)
+
+  zone_id = aws_route53_zone.client_zone[var.client_domains[each.value.domain_key]].zone_id 
+  name    = "${each.value.token}._domainkey"
+  type    = "CNAME"
+  ttl     = 600
+  records = [
+    "${each.value.token}.dkim.amazonses.com"
+  ]
+}
+
+# 8. SES MX Record (Incoming Mail)
+resource "aws_route53_record" "client_mx_record" {
+  for_each = var.client_domains
+  
+  zone_id = aws_route53_zone.client_zone[each.value].zone_id 
+  name    = each.value
+  type    = "MX"
+  ttl     = 300
+  
+  records = [var.ses_mx_record] 
+}

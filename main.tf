@@ -36,15 +36,25 @@ module "ecs_cluster" {
 # 4. Route53/ACM Module (Runs in us-east-1, depends on ALB outputs)
 module "route53_acm" {
   source       = "./modules/route53_acm"
+  
+  
   domain_names = values(var.client_domains)
 
   providers = {
     aws = aws.us_east_1
   }
 
-  # These outputs come from module.alb
+  # ALB info
   alb_dns_name = module.alb.alb_dns_name 
   alb_zone_id  = module.alb.alb_zone_id
+
+  # 1. client_domains 
+  client_domains = var.client_domains
+  
+  # 2. SES module
+  verification_tokens = module.ses_configuration.verification_tokens
+  dkim_tokens         = module.ses_configuration.dkim_tokens
+  ses_mx_record       = module.ses_configuration.ses_mx_record
   
   # 🔑 ACTION: Ensure module.route53_acm/outputs.tf contains 'acm_certificate_arn'
 }
@@ -71,6 +81,13 @@ module "client_deployment" {
   ecs_cluster_id                = module.ecs_cluster.ecs_cluster_id
   ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id
   task_definition_arn           = module.ecs_cluster.task_definition_arn 
+}
+
+module "ses_configuration" {
+  source = "./modules/ses_config" 
+  
+  client_domains = var.client_domains
+  aws_region     = "us-east-1" 
 }
 
 

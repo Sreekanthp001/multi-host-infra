@@ -17,30 +17,36 @@ resource "aws_ses_receipt_rule_set" "main_rule_set" {
 }
 
 resource "aws_ses_receipt_rule" "forwarding_rule" {
-  for_each        = var.client_domains
-  name            = "${each.key}-forwarding-rule"
-  rule_set_name   = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
-  enabled         = true
-  scan_enabled    = true
+  for_each          = var.client_domains
+  name              = "${each.key}-forwarding-rule"
+  rule_set_name     = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
+  enabled           = true
+  scan_enabled      = true
 
-  recipients      = [each.value]
+  recipients        = [each.value]
+
+  
+  s3_action {
+    bucket_name = aws_s3_bucket.ses_inbound_bucket.id
+    position    = 1 
+    #role_arn    = aws_iam_role.ses_s3_role.arn
+   
+  }
+  
 }
 
-# SES Custom MAIL FROM (FIXED: Using each.value (domain name) instead of each.key (client key))
 resource "aws_ses_domain_mail_from" "client_mail_from" {
   for_each         = var.client_domains
   domain           = aws_ses_domain_identity.client_ses_identity[each.key].domain 
-  # FIX: ఇక్కడ each.key కు బదులు each.value ను ఉపయోగించండి.
+  
   mail_from_domain = "mail.${each.value}" 
 }
 
 output "mail_from_domains" {
   description = "The Mail From domains configured for SES"
-  # FIX: ఇక్కడ కూడా each.value ను ఉపయోగించండి.
+  
   value       = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }
 }
-
-# 1. SES Send-Only Policy ని సృష్టించడం
 resource "aws_iam_policy" "ses_send_policy" {
   name        = "SES_SMTP_Send_Access"
   description = "Allows sending email via SES in the current region"
@@ -57,39 +63,105 @@ resource "aws_iam_policy" "ses_send_policy" {
   })
 }
 
-# 2. SMTP User ను సృష్టించడం
 resource "aws_iam_user" "smtp_user" {
   name = "ses-smtp-user"
-  # ఈ యూజర్ కేవలం ప్రోగ్రామాటిక్ యాక్సెస్ కోసం.
   tags = {
     Purpose = "SES_SMTP_Access"
   }
 }
 
-# 3. Policy ని User కి జత చేయడం
 resource "aws_iam_user_policy_attachment" "ses_smtp_attachment" {
   user       = aws_iam_user.smtp_user.name
   policy_arn = aws_iam_policy.ses_send_policy.arn
 }
 
-# 4. Access Key ను సృష్టించడం (ఇదే SMTP Username)
+
 resource "aws_iam_access_key" "smtp_access_key" {
-  user    = aws_iam_user.smtp_user.name
-  # స్థితిని Active గా ఉంచండి
-  status  = "Active"
+  user   = aws_iam_user.smtp_user.name
+  status = "Active"
 }
 
-# 5. అవుట్‌పుట్‌లు (SMTP Username మరియు Secret/Password)
-# NOTE: Secret Key ను state file లో సేవ్ చేయడం మంచి పద్ధతి కాదు, కానీ Terraform లో తప్పదు.
-# దీన్ని జాగ్రత్తగా నిర్వహించండి.
 output "smtp_username" {
   description = "The Access Key ID for SES SMTP (Username)"
   value       = aws_iam_access_key.smtp_access_key.id
-  sensitive   = true # ఈ అవుట్‌పుట్‌ను ప్లాన్/అప్లై అవుట్‌పుట్‌లో దాచండి
+  sensitive   = true 
 }
 
 output "smtp_password" {
   description = "The Secret Access Key for SES SMTP (Password)"
   value       = aws_iam_access_key.smtp_access_key.secret
-  sensitive   = true # ఈ అవుట్‌పుట్‌ను ప్లాన్/అప్లై అవుట్‌పుట్‌లో దాచండి
+  sensitive   = true 
+}
+
+resource "aws_s3_bucket" "ses_inbound_bucket" {
+  bucket = "sree84s-ses-inbound-mail-storage-0102" 
+  acl    = "private"
+
+  lifecycle_rule {
+    enabled = true
+    id      = "cleanup"
+    expiration {
+      days = 90
+    }
+  }
+}
+
+resource "aws_iam_role" "ses_s3_role" {
+  name = "SES-S3-Delivery-Role-for-Mail"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ses.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      },
+    ]
+  })
+}
+
+resource "aws_iam_policy" "ses_s3_policy" {
+  name = "SES-S3-Delivery-Policy-for-Mail"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "s3:PutObject"
+        Resource = [
+          "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
+        ]
+      },
+    ]
+  })
+}
+# SES ను S3 బకెట్‌లో మెయిల్స్ వేయడానికి అనుమతించే బకెట్ పాలసీ.
+resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
+  bucket = aws_s3_bucket.ses_inbound_bucket.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ses.amazonaws.com"
+        }
+        Action = "s3:PutObject"
+        Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = "535462128585" # మీ AWS అకౌంట్ ID
+            "aws:SourceArn"     = "arn:aws:ses:us-east-1:535462128585:receipt-rule-set/multi-client-rules" # మీ Receipt Rule Set యొక్క ARN.
+          }
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ses_s3_attach" {
+  role       = aws_iam_role.ses_s3_role.name
+  policy_arn = aws_iam_policy.ses_s3_policy.arn
 }

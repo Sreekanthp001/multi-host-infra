@@ -134,8 +134,11 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
         Condition = {
           StringEquals = {
             "aws:SourceAccount" : "535462128585", 
-            // AWS Rule Set యొక్క ARN
-            "aws:SourceArn" : "arn:aws:ses:${data.aws_region.current.name}:535462128585:receipt-rule-set/${aws_ses_receipt_rule_set.main_rule_set.id}"
+          }
+          // ✅ చివరి పరిష్కారం: SourceArn చివర్లో /* ను జోడించాలి. 
+          // ఇది Rule Set లోని అన్ని Rules (Receipt Rules) అనుమతించడానికి ఉపయోగపడుతుంది.
+          ArnLike = {
+            "aws:SourceArn" : "arn:aws:ses:${data.aws_region.current.name}:535462128585:receipt-rule-set/multi-client-rules/*"
           }
         }
       },

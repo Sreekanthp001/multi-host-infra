@@ -1,12 +1,17 @@
 locals {
   
-  all_dkim_tokens = flatten([for tokens in var.dkim_tokens : tokens])
-  
-  dkim_record_count = length(var.client_domains) * 3
+  dkim_records_map = merge([
+    for k, tokens in var.dkim_tokens : {
+      for i, token in tokens : "${k}_dkim_${i}" => { 
+        token_value   = token
+        client_domain = var.client_domains[k] 
+      }
+    }
+  ]...)
 }
 resource "aws_route53_zone" "client_zone" {
-  for_each = toset(var.domain_names) # var.domain_names contains ["venturemond.com", "sampleclient.com"]
-  name     = each.key # The key of the map is "venturemond.com"
+  for_each = toset(var.domain_names) 
+  name     = each.key 
 }
 
 # 2. ACM Certificate Request
@@ -91,23 +96,25 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records
+
+# 7. SES DKIM CNAME Records (FINAL FIX - using for_each on locals map)
 resource "aws_route53_record" "ses_dkim_records" {
   
-  count = local.dkim_record_count
+ 
+  for_each = local.dkim_records_map 
+
+
+  client_domain = each.value.client_domain
+  
+  token_value   = each.value.token_value
 
   
-  token_value = local.all_dkim_tokens[count.index]
+  zone_id = aws_route53_zone.client_zone[each.value.client_domain].zone_id 
   
-  
-  client_domain = element(values(var.client_domains), floor(count.index / 3))
-
-  
-  zone_id = aws_route53_zone.client_zone[client_domain].zone_id 
-  name    = "${token_value}._domainkey"                           
+  name    = "${token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  records = ["${token_value}.dkim.amazonses.com"]                  
+  records = ["${token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

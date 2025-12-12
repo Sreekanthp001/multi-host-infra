@@ -42,11 +42,11 @@ resource "aws_security_group" "ecs_tasks_sg" {
 
   # Ingress: Allow traffic on port 8080 (our container port) only from the ALB's security group
   ingress {
-    description     = "From ALB"
-    from_port       = 8080 # Standard Nginx container port
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [var.alb_sg_id]
+    description      = "Allow traffic from ALB on app port"
+    from_port        = 80  
+    to_port          = 80  
+    protocol         = "tcp"
+    security_groups  = [var.alb_sg_id]
   }
 
   # Egress: Allows outbound connection (e.g., to SES, NAT Gateway)

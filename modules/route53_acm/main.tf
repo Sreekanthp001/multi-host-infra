@@ -93,24 +93,30 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records (The Final Stable Fix)
-# 7. SES DKIM CNAME Records (The Final Stable Fix using for_each)
+# 7. SES DKIM CNAME Records (THE FINAL GUARANTEED FIX)
+# ఈ పరిష్కారం స్థిరమైన 'count' మరియు values() ను ఉపయోగిస్తుంది.
 resource "aws_route53_record" "ses_dkim_records" {
   
-  # local.dkim_records_map పై లూప్ చేస్తున్నాము. కీలు ప్లాన్-టైమ్‌లో స్థిరంగా ఉంటాయి.
-  for_each = local.dkim_records_map
+  # క్లయింట్ల సంఖ్య స్థిరంగా ఉంటుంది కాబట్టి, లూప్ పరిమాణం (count) స్థిరంగా ఉంటుంది.
+  # ಪ್ರತಿ డొమైన్‌కు 3 DKIM CNAME రికార్డులు అవసరం.
+  count = length(var.client_domains) * 3
 
-  # zone_id కోసం each.value.domain_name ను వాడుతున్నాము
-  zone_id = aws_route53_zone.client_zone[each.value.domain_name].zone_id 
+  # డొమైన్ పేరును లెక్కించే లాజిక్
+  domain_name = element(values(var.client_domains), floor(count.index / 3))
   
-  # పేరు కోసం each.value.token_value ను వాడుతున్నాము
-  name    = "${each.value.token_value}._domainkey"
+  # DKIM టోకెన్ విలువను లెక్కించే లాజిక్
+  # var.dkim_tokens అనేది apply-time లో known అయినప్పటికీ,
+  # values(var.dkim_tokens) ద్వారా వచ్చిన లిస్ట్ లోని element ను తీసుకుంటున్నాము.
+  tokens_flat = flatten(values(var.dkim_tokens))
+  token_value = element(self.tokens_flat, count.index)
+
+
+  zone_id = aws_route53_zone.client_zone[self.domain_name].zone_id
   
+  name    = "${self.token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  
-  # records కోసం each.value.token_value ను వాడుతున్నాము
-  records = ["${each.value.token_value}.dkim.amazonses.com"]
+  records = ["${self.token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

@@ -15,12 +15,11 @@ variable "client_domains" {
   description = "Map of client name to their domain name"
   type = map(string)
   default = {
-    sree84s = "sree84s.site"
+    "sree84s-prod"  = "sree84s.site",     
+    "sree84s-dev"   = "dev.sree84s.site"  
   }
 }
 # Add other global variables here as needed
-
-# root main.tf / outputs.tf లో జోడించండి
 
 output "ses_smtp_username" {
   description = "The SES SMTP Username (Access Key ID)"

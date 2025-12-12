@@ -35,6 +35,6 @@ resource "aws_ses_domain_mail_from" "client_mail_from" {
 
 output "mail_from_domains" {
   description = "The Mail From domains configured for SES"
-  # FIX: అవుట్‌పుట్ రిసోర్స్ పేరును aws_ses_identity_mail_from కు మార్చడం.
-  value       = { for k, v in aws_ses_domain_identity_mail_from.client_mail_from : k => v.mail_from_domain }
+  # FIX: అవుట్‌పుట్ రిసోర్స్ పేరును aws_ses_domain_mail_from కు మార్చడం.
+  value       = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }
 }

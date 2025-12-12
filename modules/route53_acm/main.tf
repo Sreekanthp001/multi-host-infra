@@ -97,23 +97,24 @@ resource "aws_route53_record" "ses_verification_txt" {
 }
 
 
-# 7. SES DKIM CNAME Records (FINAL FIX - using for_each on locals map)
+# 7. SES DKIM CNAME Records (FINAL STABLE SOLUTION)
 resource "aws_route53_record" "ses_dkim_records" {
   
-  
-  for_each = local.dkim_records_map 
+  count = length(var.client_domains) * 3
 
   
-  zone_id = aws_route53_zone.client_zone[each.value.client_domain].zone_id 
+  tokens_flat = flatten(values(var.dkim_tokens))
+  token_value = element(self.tokens_flat, count.index)
   
-  # each.value.token_value 
-  name    = "${each.value.token_value}._domainkey"
   
+  client_domain = element(values(var.client_domains), floor(count.index / 3))
+
+  # DNS 
+  zone_id = aws_route53_zone.client_zone[self.client_domain].zone_id
+  name    = "${self.token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  
-  # each.value.token_value 
-  records = ["${each.value.token_value}.dkim.amazonses.com"] 
+  records = ["${self.token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

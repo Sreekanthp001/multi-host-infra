@@ -15,10 +15,16 @@ locals {
   ])
 }
 
-
+# 1. Hosted Zone Creation - రూట్ డొమైన్ కోసం మాత్రమే సృష్టించండి
 resource "aws_route53_zone" "client_zone" {
-  for_each = toset(var.domain_names)
-  name     = each.key
+  # var.domain_names లోని మొదటి ఎలిమెంట్ రూట్ డొమైన్ అని ఊహిస్తున్నాము (ఉదా. sree84s.site)
+  count = length(var.domain_names) > 0 ? 1 : 0
+  name     = var.domain_names[0]
+}
+
+# వేరియబుల్స్ నుండి రూట్ జోన్ ID ని తీసుకోవడానికి ఒక local వేరియబుల్
+locals {
+  root_zone_id = try(aws_route53_zone.client_zone[0].zone_id, "")
 }
 
 
@@ -51,12 +57,8 @@ resource "aws_route53_record" "cert_validation_records" {
   records         = [each.value.resource_record_value]
   ttl             = 60
 
-  
-  zone_id = aws_route53_zone.client_zone[
-    substr(each.value.domain_name, 0, 2) == "*." 
-      ? substr(each.value.domain_name, 2, length(each.value.domain_name) - 2) 
-      : each.value.domain_name
-  ].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
 }
 
 # 4. Wait for ACM Validation to Complete
@@ -72,7 +74,8 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 # 5. Route 53 A Records to ALB
 resource "aws_route53_record" "alb_alias" {
   for_each = toset(var.domain_names)
-  zone_id  = aws_route53_zone.client_zone[each.key].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id  = local.root_zone_id
   name     = each.key # example.com
 
   type = "A"
@@ -88,7 +91,8 @@ resource "aws_route53_record" "alb_alias" {
 resource "aws_route53_record" "ses_verification_txt" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.value].zone_id 
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
   name    = "_amazonses.${each.value}"
   type    = "TXT"
   ttl     = 600
@@ -97,15 +101,14 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records (THE FINAL GUARANTEED SYNTAX FIX)
+# 7. SES DKIM CNAME Records 
 resource "aws_route53_record" "ses_dkim_records" {
 
   # count 
   count = length(local.dkim_records_data)
 
-  zone_id = aws_route53_zone.client_zone[
-    local.dkim_records_data[count.index].domain_name
-  ].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
 
   name    = "${local.dkim_records_data[count.index].token_value}._domainkey"
 
@@ -119,7 +122,8 @@ resource "aws_route53_record" "ses_dkim_records" {
 resource "aws_route53_record" "client_mx_record" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.value].zone_id 
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id 
   name    = each.value
   type    = "MX"
   ttl     = 300
@@ -128,12 +132,12 @@ resource "aws_route53_record" "client_mx_record" {
   records = [var.ses_mx_record] 
 }
 
-# 9. SPF Record (TXT) - Root Domain కోసం (FIXED: Removed comment)
-# v=spf1 include:amazonses.com ~all
+# 9. SPF Record (TXT) - Root Domain కోసం
 resource "aws_route53_record" "client_spf_record" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.value].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
   name    = each.key
   type    = "TXT"
   ttl     = 600
@@ -142,16 +146,16 @@ resource "aws_route53_record" "client_spf_record" {
   ]
 }
 
-# 10. DMARC Record (TXT) (FIXED: Removed comment)
+# 10. DMARC Record (TXT)
 resource "aws_route53_record" "client_dmarc_record" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.value].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
   name    = "_dmarc.${each.key}"
   type    = "TXT"
   ttl     = 600
   records = [
-    # rua=mailto:dmarc-reports@${each.key} 
     "v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.key}; pct=100; adkim=r; aspf=r",
   ]
 }
@@ -161,7 +165,8 @@ resource "aws_route53_record" "client_dmarc_record" {
 resource "aws_route53_record" "client_mail_from_mx" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.value].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
   name    = var.mail_from_domains[each.key]
   type    = "MX"
   ttl     = 600
@@ -175,7 +180,8 @@ resource "aws_route53_record" "client_mail_from_mx" {
 resource "aws_route53_record" "client_mail_from_txt" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.value].zone_id
+  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
+  zone_id = local.root_zone_id
   name    = var.mail_from_domains[each.key]
   type    = "TXT"
   ttl     = 600

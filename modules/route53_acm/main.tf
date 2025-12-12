@@ -1,3 +1,9 @@
+locals {
+  
+  all_dkim_tokens = flatten([for tokens in var.dkim_tokens : tokens])
+  
+  dkim_record_count = length(var.client_domains) * 3
+}
 resource "aws_route53_zone" "client_zone" {
   for_each = toset(var.domain_names) # var.domain_names contains ["venturemond.com", "sampleclient.com"]
   name     = each.key # The key of the map is "venturemond.com"
@@ -88,20 +94,13 @@ resource "aws_route53_record" "ses_verification_txt" {
 # 7. SES DKIM CNAME Records
 resource "aws_route53_record" "ses_dkim_records" {
   
-  count = length(var.client_domains) * 3
+  count = local.dkim_record_count
 
-  # flattened list of all 3 tokens for all clients (e.g., [sree1, sree2, sree3, client2_1, client2_2, ...])
-  tokens = flatten([for tokens in var.dkim_tokens : tokens])
+  token_value = local.all_dkim_tokens[count.index]
+  
+  client_domain = element(values(var.client_domains), floor(count.index / 3))
 
-  
-  token_value = element(self.tokens, count.index)
-  
-  
-  client_key = element(keys(var.client_domains), floor(count.index / 3))
-  client_domain = var.client_domains[self.client_key]
-  
-  
-  zone_id = aws_route53_zone.client_zone[self.client_domain].zone_id
+    zone_id = aws_route53_zone.client_zone[self.client_domain].zone_id
   name    = "${self.token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600

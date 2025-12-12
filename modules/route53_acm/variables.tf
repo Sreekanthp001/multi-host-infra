@@ -38,3 +38,8 @@ variable "ses_mx_record" {
   description = "MX record value pointing to the regional SES endpoint (from ses_config module output)."
   type        = string
 }
+
+variable "mail_from_domains" {
+  description = "Map of client domains to their configured SES MAIL FROM sub-domains (e.g. mail.sree84s.site)"
+  type        = map(string)
+}

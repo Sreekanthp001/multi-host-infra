@@ -27,3 +27,15 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
 
   
 }
+
+# SES Custom MAIL FROM 
+resource "aws_ses_mail_from" "client_mail_from" {
+  for_each         = var.client_domains
+  domain           = aws_ses_domain_identity.client_ses_identity[each.key].domain
+  mail_from_domain = "mail.${each.key}" 
+}
+
+output "mail_from_domains" {
+  description = "The Mail From domains configured for SES"
+  value       = { for k, v in aws_ses_mail_from.client_mail_from : k => v.mail_from_domain }
+}

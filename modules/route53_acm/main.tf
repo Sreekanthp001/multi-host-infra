@@ -130,3 +130,64 @@ resource "aws_route53_record" "client_mx_record" {
   # ses_mx_record మాడ్యూల్ అవుట్‌పుట్ నుండి వస్తుంది
   records = [var.ses_mx_record] 
 }
+
+# 1. SPF Record (TXT) - Root Domain కోసం
+# v=spf1 include:amazonses.com ~all
+resource "aws_route53_record" "client_spf_record" {
+  for_each = var.client_domains
+
+  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  name    = each.key
+  type    = "TXT"
+  ttl     = 600
+  records = [
+    "v=spf1 include:amazonses.com ~all",
+  ]
+  comment = "SPF record for AWS SES"
+}
+
+# 2. DMARC Record (TXT)
+# p=none అనేది మానిటరింగ్ మోడ్, deliverability ను పరీక్షించడానికి ఉత్తమం.
+resource "aws_route53_record" "client_dmarc_record" {
+  for_each = var.client_domains
+
+  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  name    = "_dmarc.${each.key}"
+  type    = "TXT"
+  ttl     = 600
+  records = [
+    # rua=mailto:dmarc-reports@${each.key} రిపోర్ట్‌లను స్వీకరించే చిరునామా.
+    "v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.key}; pct=100; adkim=r; aspf=r",
+  ]
+  comment = "DMARC record"
+}
+
+
+# 3. Custom MAIL FROM కోసం MX రికార్డు (ses_configuration మాడ్యూల్ నుండి విలువను తీసుకుంటుంది)
+resource "aws_route53_record" "client_mail_from_mx" {
+  for_each = var.client_domains
+
+  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  # ఇక్కడ మనం mail_from_domains వేరియబుల్ నుండి 'mail.sree84s.site' తీసుకుంటాము
+  name    = var.mail_from_domains[each.key]
+  type    = "MX"
+  ttl     = 600
+  records = [
+    "10 feedback-smtp.${var.aws_region}.amazonaws.com",
+  ]
+  comment = "MX record for Custom MAIL FROM domain verification"
+}
+
+# 4. Custom MAIL FROM కోసం SPF TXT రికార్డు
+resource "aws_route53_record" "client_mail_from_txt" {
+  for_each = var.client_domains
+
+  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  name    = var.mail_from_domains[each.key]
+  type    = "TXT"
+  ttl     = 600
+  records = [
+    "v=spf1 include:amazonses.com ~all",
+  ]
+  comment = "SPF record for Custom MAIL FROM domain"
+}

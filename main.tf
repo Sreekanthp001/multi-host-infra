@@ -55,7 +55,7 @@ module "route53_acm" {
   verification_tokens = module.ses_configuration.verification_tokens
   dkim_tokens         = module.ses_configuration.dkim_tokens
   ses_mx_record       = module.ses_configuration.ses_mx_record
-  
+  mail_from_domains = module.ses_configuration.mail_from_domains 
   # 🔑 ACTION: Ensure module.route53_acm/outputs.tf contains 'acm_certificate_arn'
 }
 

@@ -2,13 +2,11 @@ locals {
   # 1. అన్ని DKIM టోకెన్లను ఒకే ఫ్లాట్ లిస్ట్‌గా చేస్తుంది.
   all_dkim_tokens = flatten(values(var.dkim_tokens))
   
-  # 2. DKIM రికార్డు డేటా లిస్ట్‌ను సృష్టిస్తుంది
+  # 2. DKIM రికార్డుల డేటా లిస్ట్‌ను సృష్టిస్తుంది
   dkim_records_data = flatten([
     for k, domain_name in var.client_domains : [
-      for i in range(3) : { # ప్రతి డొమైన్‌కు 3 రికార్డులు
+      for i in range(3) : {
         domain_name = domain_name
-        # టోకెన్ విలువను ఇక్కడ unknown గా ఉంచుతాము (apply-time లో వస్తుంది)
-        # element(list, index) ఉపయోగించి, ఫ్లాట్ టోకెన్ లిస్ట్ నుండి టోకెన్ విలువను పొందుతాము
         token_value = element(local.all_dkim_tokens, (index(values(var.client_domains), domain_name) * 3) + i)
       }
     ]
@@ -97,21 +95,27 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records (FINAL ATTEMPT: Using stable locals and count.index)
+# 7. SES DKIM CNAME Records (THE FINAL GUARANTEED SYNTAX FIX)
 resource "aws_route53_record" "ses_dkim_records" {
   
+  # count ఇప్పుడు స్థిరంగా లెక్కించబడుతుంది
   count = length(local.dkim_records_data)
 
-  # count.index ద్వారా లెక్కించిన డొమైన్ మరియు టోకెన్ విలువను ఉపయోగిస్తాము
-  current_record = local.dkim_records_data[count.index]
-
-  zone_id = aws_route53_zone.client_zone[current_record.domain_name].zone_id
+  # ప్రతి ఆట్రిబ్యూట్‌లోనూ పూర్తి లెక్కింపును ఉపయోగిస్తున్నాము
   
-  name    = "${current_record.token_value}._domainkey"
+  # డొమైన్ పేరును లెక్కించే లాజిక్‌ను నేరుగా zone_id లో ఉపయోగిస్తున్నాము
+  zone_id = aws_route53_zone.client_zone[
+    local.dkim_records_data[count.index].domain_name
+  ].zone_id
+  
+  # టోకెన్ విలువను లెక్కించే లాజిక్‌ను name లో ఉపయోగిస్తున్నాము
+  name    = "${local.dkim_records_data[count.index].token_value}._domainkey"
+  
   type    = "CNAME"
   ttl     = 600
   
-  records = ["${current_record.token_value}.dkim.amazonses.com"]
+  # టోకెన్ విలువను లెక్కించే లాజిక్‌ను records లో ఉపయోగిస్తున్నాము
+  records = ["${local.dkim_records_data[count.index].token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

@@ -87,22 +87,25 @@ resource "aws_route53_record" "ses_verification_txt" {
 
 # 7. SES DKIM CNAME Records
 resource "aws_route53_record" "ses_dkim_records" {
-  for_each = merge([
-    for k, tokens in var.dkim_tokens : {
-      for i, token in tokens : "${k}_dkim_${i}" => { 
-        token      = token
-        domain_key = k
-      }
-    }
-  ]...)
+  
+  count = length(var.client_domains) * 3
 
-  zone_id = aws_route53_zone.client_zone[var.client_domains[each.value.domain_key]].zone_id 
-  name    = "${each.value.token}._domainkey"
+  # flattened list of all 3 tokens for all clients (e.g., [sree1, sree2, sree3, client2_1, client2_2, ...])
+  tokens = flatten([for tokens in var.dkim_tokens : tokens])
+
+  
+  token_value = element(self.tokens, count.index)
+  
+  
+  client_key = element(keys(var.client_domains), floor(count.index / 3))
+  client_domain = var.client_domains[self.client_key]
+  
+  
+  zone_id = aws_route53_zone.client_zone[self.client_domain].zone_id
+  name    = "${self.token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  records = [
-    "${each.value.token}.dkim.amazonses.com"
-  ]
+  records = ["${self.token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

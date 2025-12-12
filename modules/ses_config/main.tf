@@ -25,14 +25,11 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
 
   recipients        = [each.value]
 
-  
+  # S3 యాక్షన్, ఇప్పుడు role_arn లేదు
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
     position    = 1 
-    #role_arn    = aws_iam_role.ses_s3_role.arn
-   
   }
-  
 }
 
 resource "aws_ses_domain_mail_from" "client_mail_from" {
@@ -47,6 +44,7 @@ output "mail_from_domains" {
   
   value       = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }
 }
+
 resource "aws_iam_policy" "ses_send_policy" {
   name        = "SES_SMTP_Send_Access"
   description = "Allows sending email via SES in the current region"
@@ -93,6 +91,7 @@ output "smtp_password" {
   sensitive   = true 
 }
 
+# S3 బకెట్ రిసోర్స్
 resource "aws_s3_bucket" "ses_inbound_bucket" {
   bucket = "sree84s-ses-inbound-mail-storage-0102" 
   acl    = "private"
@@ -106,38 +105,8 @@ resource "aws_s3_bucket" "ses_inbound_bucket" {
   }
 }
 
-resource "aws_iam_role" "ses_s3_role" {
-  name = "SES-S3-Delivery-Role-for-Mail"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ses.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      },
-    ]
-  })
-}
-
-resource "aws_iam_policy" "ses_s3_policy" {
-  name = "SES-S3-Delivery-Policy-for-Mail"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = "s3:PutObject"
-        Resource = [
-          "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
-        ]
-      },
-    ]
-  })
-}
 # SES ను S3 బకెట్‌లో మెయిల్స్ వేయడానికి అనుమతించే బకెట్ పాలసీ.
+# (IAM Role రిసోర్స్‌లను తొలగించి, దీన్ని మాత్రమే ఉంచుతున్నాము)
 resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
   bucket = aws_s3_bucket.ses_inbound_bucket.id
   policy = jsonencode({
@@ -152,16 +121,11 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
         Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*"
         Condition = {
           StringEquals = {
-            "aws:SourceAccount" = "535462128585" # మీ AWS అకౌంట్ ID
-            "aws:SourceArn"     = "arn:aws:ses:us-east-1:535462128585:receipt-rule-set/multi-client-rules" # మీ Receipt Rule Set యొక్క ARN.
+            "aws:SourceAccount" : "535462128585",
+            "aws:SourceArn" : "arn:aws:ses:us-east-1:535462128585:receipt-rule-set/multi-client-rules"
           }
         }
       },
     ]
   })
-}
-
-resource "aws_iam_role_policy_attachment" "ses_s3_attach" {
-  role       = aws_iam_role.ses_s3_role.name
-  policy_arn = aws_iam_policy.ses_s3_policy.arn
 }

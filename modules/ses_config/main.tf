@@ -25,6 +25,11 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
 
   recipients          = [each.value]
 
+  depends_on = [
+    aws_s3_bucket_policy.ses_s3_delivery_policy,
+    aws_ses_receipt_rule_set.main_rule_set
+  ]
+
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
     position    = 1 

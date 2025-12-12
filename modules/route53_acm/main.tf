@@ -1,7 +1,14 @@
 locals {
-  # అన్ని DKIM టోకెన్లను ఒకే ఫ్లాట్ లిస్ట్‌గా చేస్తుంది.
-  # ఇది DKIM CNAME రికార్డుల లూపింగ్ కోసం count ను స్థిరంగా ఉంచుతుంది.
-  all_dkim_tokens = flatten(values(var.dkim_tokens))
+  # (పాత all_dkim_tokens ని తొలగించండి లేదా దీనికి మార్చండి)
+  # DKIM CNAME రికార్డులను సృష్టించడానికి అవసరమైన మొత్తం డేటాను కలిగి ఉన్న మ్యాప్‌ను సిద్ధం చేస్తుంది.
+  dkim_records_map = merge([
+    for k, tokens in var.dkim_tokens : {
+      for i, token in tokens : "${k}_dkim_${i}" => { # కీ: domainkey_dkim_0
+        domain_name = var.client_domains[k] # ఏ డొమైన్‌కు చెందింది
+        token_value = token                # అసలు టోకెన్ విలువ (apply-time లో వస్తుంది)
+      }
+    }
+  ]...)
 }
 
 # 1. ప్రతి డొమైన్ కోసం Route 53 Hosted Zone ను సృష్టిస్తుంది
@@ -87,23 +94,23 @@ resource "aws_route53_record" "ses_verification_txt" {
 }
 
 # 7. SES DKIM CNAME Records (The Final Stable Fix)
+# 7. SES DKIM CNAME Records (The Final Stable Fix using for_each)
 resource "aws_route53_record" "ses_dkim_records" {
   
-  # local.all_dkim_tokens యొక్క మొత్తం సంఖ్యపై లూప్ చేస్తుంది
-  count = length(local.all_dkim_tokens)
+  # local.dkim_records_map పై లూప్ చేస్తున్నాము. కీలు ప్లాన్-టైమ్‌లో స్థిరంగా ఉంటాయి.
+  for_each = local.dkim_records_map
 
-  # డొమైన్ పేరును లెక్కించే లాజిక్ (count.index ను 3 తో భాగించి)
-  domain_name = element(values(var.client_domains), floor(count.index / 3))
-  # టోకెన్ విలువను లెక్కించే లాజిక్
-  token_value = local.all_dkim_tokens[count.index]
-
-  zone_id = aws_route53_zone.client_zone[domain_name].zone_id
+  # zone_id కోసం each.value.domain_name ను వాడుతున్నాము
+  zone_id = aws_route53_zone.client_zone[each.value.domain_name].zone_id 
   
-  name    = "${token_value}._domainkey"
+  # పేరు కోసం each.value.token_value ను వాడుతున్నాము
+  name    = "${each.value.token_value}._domainkey"
+  
   type    = "CNAME"
   ttl     = 600
   
-  records = ["${token_value}.dkim.amazonses.com"]
+  # records కోసం each.value.token_value ను వాడుతున్నాము
+  records = ["${each.value.token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

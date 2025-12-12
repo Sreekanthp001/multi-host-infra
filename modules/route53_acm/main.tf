@@ -138,7 +138,7 @@ resource "aws_route53_record" "client_mx_record" {
 resource "aws_route53_record" "client_spf_record" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  zone_id = aws_route53_zone.client_zone[each.value].zone_id
   name    = each.key
   type    = "TXT"
   ttl     = 600
@@ -152,7 +152,7 @@ resource "aws_route53_record" "client_spf_record" {
 resource "aws_route53_record" "client_dmarc_record" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  zone_id = aws_route53_zone.client_zone[each.value].zone_id
   name    = "_dmarc.${each.key}"
   type    = "TXT"
   ttl     = 600
@@ -167,7 +167,7 @@ resource "aws_route53_record" "client_dmarc_record" {
 resource "aws_route53_record" "client_mail_from_mx" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  zone_id = aws_route53_zone.client_zone[each.value].zone_id
   name    = var.mail_from_domains[each.key]
   type    = "MX"
   ttl     = 600
@@ -181,7 +181,7 @@ resource "aws_route53_record" "client_mail_from_mx" {
 resource "aws_route53_record" "client_mail_from_txt" {
   for_each = var.client_domains
 
-  zone_id = aws_route53_zone.client_zone[each.key].zone_id
+  zone_id = aws_route53_zone.client_zone[each.value].zone_id
   name    = var.mail_from_domains[each.key]
   type    = "TXT"
   ttl     = 600

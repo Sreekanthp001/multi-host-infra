@@ -28,13 +28,13 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   enabled             = true
   scan_enabled        = true
 
-  recipients          = ["@${each.value}"]
+  recipients          = [each.value]
 
+  # 🛑 తుది depends_on: S3 Policy అప్‌డేట్ అయ్యాకే Rule క్రియేట్ అవ్వాలి.
   depends_on = [
-    aws_s3_bucket_policy.ses_s3_delivery_policy,
-    aws_ses_receipt_rule_set.main_rule_set
+    aws_s3_bucket_policy.ses_s3_delivery_policy 
   ]
-
+  
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
     position    = 1 
@@ -128,19 +128,14 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
           Service = "ses.amazonaws.com"
         }
         Action = "s3:PutObject" 
-        
-        // ✅ 1. S3 Resource ARN సరిగా ఉంది.
         Resource = [ 
           "${aws_s3_bucket.ses_inbound_bucket.arn}/*", 
         ]
-        
         Condition = {
           StringEquals = {
             "aws:SourceAccount" : "535462128585", 
-            
-            // ✅ 2. తుది పరిష్కారం: SES Rule Set యొక్క ఖచ్చితమైన ARN ను ఉపయోగించాలి.
-            // aws:SourceArn కోసం AWS Console లోని ARN ఫార్మాట్‌ను స్ట్రింగ్ ఇంటర్‌పోలేషన్‌తో సరిదిద్దాం.
-            "aws:SourceArn" : "arn:aws:ses:${data.aws_region.current.name}:535462128585:receipt-rule-set/multi-client-rules"
+            // AWS Rule Set యొక్క ARN
+            "aws:SourceArn" : "arn:aws:ses:${data.aws_region.current.name}:535462128585:receipt-rule-set/${aws_ses_receipt_rule_set.main_rule_set.id}"
           }
         }
       },

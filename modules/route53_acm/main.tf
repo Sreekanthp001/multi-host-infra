@@ -16,15 +16,15 @@ locals {
 }
 
 # 1. Hosted Zone Creation - రూట్ డొమైన్ కోసం మాత్రమే ఒకే Hosted Zone సృష్టించండి
-resource "aws_route53_zone" "client_zone" {
-  # var.domain_names లోని మొదటి ఎలిమెంట్ రూట్ డొమైన్ అని ఊహిస్తున్నాము (ఉదా. sree84s.site)
+# 1. Hosted Zone Creation - పేరు మార్చండి
+resource "aws_route53_zone" "client_zone_new" { 
   count    = length(var.domain_names) > 0 ? 1 : 0
   name     = var.domain_names[0]
 }
 
-# వేరియబుల్స్ నుండి రూట్ జోన్ ID ని తీసుకోవడానికి local వేరియబుల్
+# local రిఫరెన్స్
 locals {
-  root_zone_id = try(aws_route53_zone.client_zone[0].zone_id, "")
+  root_zone_id = try(aws_route53_zone.client_zone_new[0].zone_id, "") # <--- client_zone_new
 }
 
 

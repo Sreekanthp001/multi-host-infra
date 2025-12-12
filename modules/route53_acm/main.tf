@@ -1,14 +1,18 @@
 locals {
-  # (పాత all_dkim_tokens ని తొలగించండి లేదా దీనికి మార్చండి)
-  # DKIM CNAME రికార్డులను సృష్టించడానికి అవసరమైన మొత్తం డేటాను కలిగి ఉన్న మ్యాప్‌ను సిద్ధం చేస్తుంది.
-  dkim_records_map = merge([
-    for k, tokens in var.dkim_tokens : {
-      for i, token in tokens : "${k}_dkim_${i}" => { # కీ: domainkey_dkim_0
-        domain_name = var.client_domains[k] # ఏ డొమైన్‌కు చెందింది
-        token_value = token                # అసలు టోకెన్ విలువ (apply-time లో వస్తుంది)
+  # 1. అన్ని DKIM టోకెన్లను ఒకే ఫ్లాట్ లిస్ట్‌గా చేస్తుంది.
+  all_dkim_tokens = flatten(values(var.dkim_tokens))
+  
+  # 2. DKIM రికార్డు డేటా లిస్ట్‌ను సృష్టిస్తుంది
+  dkim_records_data = flatten([
+    for k, domain_name in var.client_domains : [
+      for i in range(3) : { # ప్రతి డొమైన్‌కు 3 రికార్డులు
+        domain_name = domain_name
+        # టోకెన్ విలువను ఇక్కడ unknown గా ఉంచుతాము (apply-time లో వస్తుంది)
+        # element(list, index) ఉపయోగించి, ఫ్లాట్ టోకెన్ లిస్ట్ నుండి టోకెన్ విలువను పొందుతాము
+        token_value = element(local.all_dkim_tokens, (index(values(var.client_domains), domain_name) * 3) + i)
       }
-    }
-  ]...)
+    ]
+  ])
 }
 
 # 1. ప్రతి డొమైన్ కోసం Route 53 Hosted Zone ను సృష్టిస్తుంది
@@ -93,30 +97,21 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records (THE FINAL GUARANTEED FIX)
-# ఈ పరిష్కారం స్థిరమైన 'count' మరియు values() ను ఉపయోగిస్తుంది.
+# 7. SES DKIM CNAME Records (FINAL ATTEMPT: Using stable locals and count.index)
 resource "aws_route53_record" "ses_dkim_records" {
   
-  # క్లయింట్ల సంఖ్య స్థిరంగా ఉంటుంది కాబట్టి, లూప్ పరిమాణం (count) స్థిరంగా ఉంటుంది.
-  # ಪ್ರತಿ డొమైన్‌కు 3 DKIM CNAME రికార్డులు అవసరం.
-  count = length(var.client_domains) * 3
+  count = length(local.dkim_records_data)
 
-  # డొమైన్ పేరును లెక్కించే లాజిక్
-  domain_name = element(values(var.client_domains), floor(count.index / 3))
+  # count.index ద్వారా లెక్కించిన డొమైన్ మరియు టోకెన్ విలువను ఉపయోగిస్తాము
+  current_record = local.dkim_records_data[count.index]
+
+  zone_id = aws_route53_zone.client_zone[current_record.domain_name].zone_id
   
-  # DKIM టోకెన్ విలువను లెక్కించే లాజిక్
-  # var.dkim_tokens అనేది apply-time లో known అయినప్పటికీ,
-  # values(var.dkim_tokens) ద్వారా వచ్చిన లిస్ట్ లోని element ను తీసుకుంటున్నాము.
-  tokens_flat = flatten(values(var.dkim_tokens))
-  token_value = element(self.tokens_flat, count.index)
-
-
-  zone_id = aws_route53_zone.client_zone[self.domain_name].zone_id
-  
-  name    = "${self.token_value}._domainkey"
+  name    = "${current_record.token_value}._domainkey"
   type    = "CNAME"
   ttl     = 600
-  records = ["${self.token_value}.dkim.amazonses.com"]
+  
+  records = ["${current_record.token_value}.dkim.amazonses.com"]
 }
 
 # 8. SES MX Record (Incoming Mail)

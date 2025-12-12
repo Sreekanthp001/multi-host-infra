@@ -19,3 +19,17 @@ variable "client_domains" {
   }
 }
 # Add other global variables here as needed
+
+# root main.tf / outputs.tf లో జోడించండి
+
+output "ses_smtp_username" {
+  description = "The SES SMTP Username (Access Key ID)"
+  value       = module.ses_configuration.smtp_username
+  sensitive   = true
+}
+
+output "ses_smtp_password" {
+  description = "The SES SMTP Password (Secret Access Key)"
+  value       = module.ses_configuration.smtp_password
+  sensitive   = true
+}

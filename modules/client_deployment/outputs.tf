@@ -1,9 +1,9 @@
 # modules/client_deployment/outputs.tf
 
-output "target_group_arn" {
-  description = "The ARN of the ECS Target Group created for this client."
-  value = aws_lb_target_group.client_tg["sree84s-prod"].arn
-}
+# output "target_group_arn" {
+#  description = "The ARN of the ECS Target Group for the client service."
+#  value       = aws_lb_target_group.client_tg["sree84s-prod"].arn
+# }
 
 output "listener_rule_arn" {
   description = "The ARN of the ALB Listener Rule created for this client's domain."

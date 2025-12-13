@@ -53,7 +53,6 @@ jobs:
 
       - name: Terraform Init and Apply (Update ECS Service)
         run: |
-          # ఇక్కడ bucket= కీ ఖచ్చితంగా చేర్చబడింది
-          terraform init -backend-config="bucket=sree84s-ses-inbound-mail-storage-0102" -backend-config="key=multi-host-infra/terraform.tfstate" -backend-config="region=us-east-1"
           
+          terraform init 
           terraform apply -auto-approve

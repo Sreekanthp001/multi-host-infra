@@ -7,13 +7,13 @@ terraform {
   }
 
   # **** కొత్తగా చేర్చబడిన S3 Backend కాన్ఫిగరేషన్ ****
-  backend "s3" {
+ /*  backend "s3" {
     # ఇక్కడ మీరు మీ అసలు S3 బకెట్ పేరును ఉంచాలి!
     bucket  = "మీ-S3-బకెట్-పేరు" 
     key     = "multi-host-infra/terraform.tfstate"
     region  = "us-east-1" # Backend బకెట్ ఉన్న రీజియన్
     encrypt = true
-  }
+  } */
   # *******************************************************
 }
 

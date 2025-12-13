@@ -31,7 +31,7 @@ resource "aws_route53_zone" "client_hosted_zones" {
 
 
 locals {
-  zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
+  zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
 }
 
 # 3. ACM Certificate Creation (Single Multi-Domain SAN Certificate)
@@ -54,20 +54,22 @@ resource "aws_acm_certificate" "client_cert" {
 }
 
 # 4. Create DNS Validation Records in the RESPECTIVE Hosted Zone
+# 4. Create DNS Validation Records in the RESPECTIVE Hosted Zone
 resource "aws_route53_record" "cert_validation_records" {
-  
   for_each = {
     for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => dvo
   }
-
+  
   allow_overwrite = true
   name            = each.value.resource_record_name
   type            = each.value.resource_record_type
   records         = [each.value.resource_record_value]
   ttl             = 60
 
-  # dvo.domain_name 
-  zone_id = local.zone_ids[each.value.domain_name]
+  # మీరు అప్‌డేట్ చేయవలసిన కీలకమైన లైన్ ఇది:
+  zone_id = local.zone_ids[
+    replace(each.value.domain_name, "*.","")
+  ]
 }
 
 # 5. Wait for ACM Validation to Complete

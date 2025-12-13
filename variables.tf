@@ -15,7 +15,8 @@ variable "client_domains" {
   description = "Map of client name to their domain name"
   type = map(string)
   default = {
-    "sree84s-prod"  = "sree84s.site",     
+    "sree84s-prod"  = "sree84s.site", 
+    "calvio-store" = "calvio.store"   
     #"sree84s-dev"   = "dev.sree84s.site"  
   }
 }

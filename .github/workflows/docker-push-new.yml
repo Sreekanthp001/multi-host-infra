@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'frontend/**'
+      - 'src/frontend/**' # <--- 1. మార్పు: మీ ప్రస్తుత ప్రాజెక్ట్ స్ట్రక్చర్‌కు సరిపోయేలా మార్చబడింది
 
 env:
   AWS_REGION: us-east-1
@@ -22,12 +22,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # (Credentials and ECR Login స్టెప్స్ మార్పులేదు)
       - name: Configure AWS Credentials (OIDC Method)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.secrets.AWS_SECRET_ACCESS_KEY }}
           output-env-credentials: true
       - name: Login to Amazon ECR
         id: login-ecr
@@ -39,11 +40,9 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
         run: |
-          echo "Building image in frontend/"
-          # 2. మార్పు: -f frontend/Dockerfile మరియు build context 'frontend' కు మార్చబడింది
-          # ఇక్కడ docker buildx build -t $IMAGE_URI -f frontend/Dockerfile frontend --push ఉపయోగించబడుతుంది
-          docker buildx build -t $IMAGE_URI -f frontend/Dockerfile frontend --push
-
+          echo "Building image in src/frontend/"
+          # 2. మార్పు: Build Context మరియు Dockerfile path ను src/frontend కు మార్చబడింది
+          docker buildx build -t $IMAGE_URI -f src/frontend/Dockerfile src/frontend --push
 
 
       - name: Setup Terraform

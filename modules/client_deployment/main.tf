@@ -52,7 +52,7 @@ resource "aws_ecs_service" "client_service" {
   desired_count   = 2 
   launch_type     = "FARGATE"
   
-  force_new_deployment = true 
+  #force_new_deployment = true 
   network_configuration {
     subnets         = var.private_subnets
     security_groups = [var.ecs_service_security_group_id]

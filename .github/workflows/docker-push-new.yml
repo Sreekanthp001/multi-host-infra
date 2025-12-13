@@ -53,8 +53,8 @@ jobs:
 
       - name: Terraform Init and Apply (Update ECS Service)
         run: |
-          # కింది కమాండ్‌లో మీ అసలు బకెట్ పేరును ఉంచండి
-          terraform init -backend-config="bucket=మీరు-కనుగొన్న-S3-బకెట్-పేరు" -backend-config="key=multi-host-infra/terraform.tfstate" -backend-config="region=us-east-1"
           
-          # ఇప్పుడు apply చేయండి.
+          terraform init -backend-config="sree84s-ses-inbound-mail-storage-0102" -backend-config="key=multi-host-infra/terraform.tfstate" -backend-config="region=us-east-1"
+          
+          
           terraform apply -auto-approve

@@ -1,24 +1,24 @@
+# providers.tf
+
 terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0" # Use a version compatible with your project
+      version = "~> 5.0"
     }
   }
 
-  # **** కొత్తగా చేర్చబడిన S3 Backend కాన్ఫిగరేషన్ ****
- /*  backend "s3" {
-    # ఇక్కడ మీరు మీ అసలు S3 బకెట్ పేరును ఉంచాలి!
-    bucket  = "మీ-S3-బకెట్-పేరు" 
+  # S3 Backend configuration - ఇది తప్పనిసరిగా terraform { ... } లోపల ఉండాలి.
+  backend "s3" {
+    bucket  = "sree84s-tf-remote-state-001" # మీ కొత్త S3 బకెట్ పేరు
     key     = "multi-host-infra/terraform.tfstate"
-    region  = "us-east-1" # Backend బకెట్ ఉన్న రీజియన్
+    region  = "us-east-1"
     encrypt = true
-  } */
-  # *******************************************************
+  }
 }
 
-# Default Provider (Uses the variable from variables.tf)
-# providers.tf (In your ROOT directory)
+# ------------------------------------------------------------------
+# Provider blocks తప్పనిసరిగా terraform { ... } బ్లాక్ వెలుపల ఉండాలి.
 
 # Primary provider (your project region)
 provider "aws" {

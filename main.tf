@@ -40,7 +40,6 @@ module "ecs_cluster" {
 module "route53_acm" {
   source       = "./modules/route53_acm"
   
-  
   domain_names = values(var.client_domains)
 
   providers = {
@@ -57,7 +56,10 @@ module "route53_acm" {
   # 2. SES module
   verification_tokens = module.ses_configuration.verification_tokens
   dkim_tokens         = module.ses_configuration.dkim_tokens
-  ses_mx_record       = module.ses_configuration.ses_mx_record
+  
+  # ✅ మార్పు ఇక్కడ ఉంది: replace ఫంక్షన్ సరిగ్గా ఉపయోగించబడింది.
+  ses_mx_record       = replace(module.ses_configuration.ses_mx_record, "10 ", "")
+  
   mail_from_domains = module.ses_configuration.mail_from_domains 
   # 🔑 ACTION: Ensure module.route53_acm/outputs.tf contains 'acm_certificate_arn'
 }

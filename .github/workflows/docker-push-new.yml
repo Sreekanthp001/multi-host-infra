@@ -11,6 +11,8 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: frontend-app
   IMAGE_TAG: latest
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   build-and-push:
@@ -27,8 +29,9 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.secrets.AWS_SECRET_ACCESS_KEY }}
+          # ఇప్పుడు ఇక్కడ env: వేరియబుల్స్ ను వాడుకుందాం
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           output-env-credentials: true
       - name: Login to Amazon ECR
         id: login-ecr

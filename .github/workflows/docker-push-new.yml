@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'src/frontend/**'
+      - 'frontend/**'
 
 env:
   AWS_REGION: us-east-1
@@ -39,8 +39,10 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
         run: |
-          echo "Building image in src/frontend/"
-          docker buildx build -t $IMAGE_URI -f src/frontend/Dockerfile src/frontend --push
+          echo "Building image in frontend/"
+          # 2. మార్పు: -f frontend/Dockerfile మరియు build context 'frontend' కు మార్చబడింది
+          # ఇక్కడ docker buildx build -t $IMAGE_URI -f frontend/Dockerfile frontend --push ఉపయోగించబడుతుంది
+          docker buildx build -t $IMAGE_URI -f frontend/Dockerfile frontend --push
 
 
 

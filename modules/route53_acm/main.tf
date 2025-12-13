@@ -1,6 +1,9 @@
 data "aws_region" "current" {}
 
+# client_domains, domain_names, dkim_tokens వేరియబుల్స్ ఇప్పటికే నిర్వచించబడ్డాయి.
+
 locals {
+  
   
   all_dkim_tokens = flatten(values(var.dkim_tokens))
 
@@ -15,25 +18,29 @@ locals {
   ])
 }
 
-# 1. Hosted Zone Creation - కేవలం రూట్ డొమైన్ (sree84s.site) కోసం మాత్రమే సృష్టించండి
-# పాత పేరుతో గందరగోళం రాకుండా "client_zone_final" అని పేరు మార్చాం
-resource "aws_route53_zone" "client_zone_final" {
-  # var.domain_names లోని మొదటి ఎలిమెంట్ రూట్ డొమైన్ అని ఊహిస్తున్నాము 
-  count    = length(var.domain_names) > 0 ? 1 : 0
-  name     = var.domain_names[0]
+# 1. Hosted Zone Creation (Multi-Zone)
+
+resource "aws_route53_zone" "client_hosted_zones" {
+  # key: client_name 
+  # value: domain_name 
+  for_each = var.client_domains 
+
+  name = each.value 
+  comment = "Managed by Terraform for Client: ${each.key}"
 }
 
-# వేరియబుల్స్ నుండి రూట్ జోన్ ID ని తీసుకోవడానికి local వేరియబుల్
+
 locals {
-  root_zone_id = try(aws_route53_zone.client_zone_final[0].zone_id, "")
+  zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
 }
 
-
+# 3. ACM Certificate Creation (Single Multi-Domain SAN Certificate)
 resource "aws_acm_certificate" "client_cert" {
   provider = aws
-
-  domain_name             = var.domain_names[0] 
-  validation_method       = "DNS"
+  
+  
+  domain_name               = var.domain_names[0] 
+  validation_method         = "DNS"
 
   subject_alternative_names = flatten([
     for domain in var.domain_names : [domain, "*.${domain}"]
@@ -46,8 +53,9 @@ resource "aws_acm_certificate" "client_cert" {
   tags = { Name = "MultiClient-Wildcard-SAN-Cert" }
 }
 
-# 3. Create DNS Validation Records in Route53
+# 4. Create DNS Validation Records in the RESPECTIVE Hosted Zone
 resource "aws_route53_record" "cert_validation_records" {
+  
   for_each = {
     for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => dvo
   }
@@ -58,11 +66,11 @@ resource "aws_route53_record" "cert_validation_records" {
   records         = [each.value.resource_record_value]
   ttl             = 60
 
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
+  # dvo.domain_name 
+  zone_id = local.zone_ids[each.value.domain_name]
 }
 
-# 4. Wait for ACM Validation to Complete
+# 5. Wait for ACM Validation to Complete
 resource "aws_acm_certificate_validation" "cert_validation" {
   certificate_arn         = aws_acm_certificate.client_cert.arn
   validation_record_fqdns = [for record in aws_route53_record.cert_validation_records : record.fqdn]
@@ -72,121 +80,35 @@ resource "aws_acm_certificate_validation" "cert_validation" {
   }
 }
 
-# 5. Route 53 A Records to ALB
 resource "aws_route53_record" "alb_alias" {
-  for_each = toset(var.domain_names)
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id  = local.root_zone_id
-  name     = each.key # example.com
+  for_each = var.client_domains
+  
+  zone_id  = local.zone_ids[each.value] 
+  name     = each.value # example.com
 
   type = "A"
 
   alias {
-    name             = var.alb_dns_name
-    zone_id          = var.alb_zone_id
+    name                   = var.alb_dns_name
+    zone_id                = var.alb_zone_id
     evaluate_target_health = true
   }
 }
 
-# 6. SES Verification TXT Record
 resource "aws_route53_record" "ses_verification_txt" {
   for_each = var.client_domains
 
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
+  zone_id = local.zone_ids[each.value] 
   name    = "_amazonses.${each.value}"
   type    = "TXT"
   ttl     = 600
-
-  # verification_tokens 
   records = [var.verification_tokens[each.key]] 
 }
 
-# 7. SES DKIM CNAME Records 
-resource "aws_route53_record" "ses_dkim_records" {
-
-  # count 
-  count = length(local.dkim_records_data)
-
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
-
-  name    = "${local.dkim_records_data[count.index].token_value}._domainkey"
-
-  type    = "CNAME"
-  ttl     = 600
-
-  records = ["${local.dkim_records_data[count.index].token_value}.dkim.amazonses.com"]
-}
-
-# 8. SES MX Record (Incoming Mail)
 resource "aws_route53_record" "client_mx_record" {
   for_each = var.client_domains
-
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id 
+  zone_id = local.zone_ids[each.value] # ఇక్కడ మార్పు చేయాలి
   name    = each.value
   type    = "MX"
-  ttl     = 300
-
-  # ses_mx_record 
-  records = [var.ses_mx_record] 
-}
-
-# 9. SPF Record (TXT) - Root Domain కోసం
-resource "aws_route53_record" "client_spf_record" {
-  for_each = var.client_domains
-
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
-  name    = each.key
-  type    = "TXT"
-  ttl     = 600
-  records = [
-    "v=spf1 include:amazonses.com ~all",
-  ]
-}
-
-# 10. DMARC Record (TXT)
-resource "aws_route53_record" "client_dmarc_record" {
-  for_each = var.client_domains
-
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
-  name    = "_dmarc.${each.key}"
-  type    = "TXT"
-  ttl     = 600
-  records = [
-    "v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.key}; pct=100; adkim=r; aspf=r",
-  ]
-}
-
-
-# 11. Custom MAIL FROM for MX Record 
-resource "aws_route53_record" "client_mail_from_mx" {
-  for_each = var.client_domains
-
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
-  name    = var.mail_from_domains[each.key]
-  type    = "MX"
-  ttl     = 600
-  records = [
-    
-    "10 feedback-smtp.${data.aws_region.current.name}.amazonaws.com", 
-  ]
-}
-
-# 12. Custom MAIL FROM for SPF TXT Record
-resource "aws_route53_record" "client_mail_from_txt" {
-  for_each = var.client_domains
-
-  # సరిచేయబడింది: రూట్ Hosted Zone ID ని ఉపయోగించండి
-  zone_id = local.root_zone_id
-  name    = var.mail_from_domains[each.key]
-  type    = "TXT"
-  ttl     = 600
-  records = [
-    "v=spf1 include:amazonses.com ~all",
-  ]
+  # ...
 }

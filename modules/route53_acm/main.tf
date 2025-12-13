@@ -105,10 +105,17 @@ resource "aws_route53_record" "ses_verification_txt" {
   records = [var.verification_tokens[each.key]] 
 }
 
+# 8. SES MX Record (Incoming Mail)
 resource "aws_route53_record" "client_mx_record" {
   for_each = var.client_domains
-  zone_id = local.zone_ids[each.value] # ఇక్కడ మార్పు చేయాలి
+
+  zone_id = local.zone_ids[each.value] # సరిచేయబడింది
   name    = each.value
   type    = "MX"
-  # ...
+  ttl     = 300
+
+  
+  records = [
+    "10 ${var.ses_mx_record}" 
+  ]
 }

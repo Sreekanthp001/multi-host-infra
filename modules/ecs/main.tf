@@ -64,7 +64,7 @@ resource "aws_security_group" "ecs_tasks_sg" {
 
 # Defines the actual task definition used by the Fargate service
 resource "aws_ecs_task_definition" "main" {
-  family                   = "${var.project_name}-task."
+  family = "${var.project_name}-task"
   cpu                      = 256
   memory                   = 512
   network_mode             = "awsvpc"

@@ -1,57 +1,53 @@
-'use strict';
-
 const AWS = require('aws-sdk');
-const S3 = new AWS.S3();
-const SES = new AWS.SES();
+const S3 = new AWS.S3({ region: 'us-east-1' });
+const SES = new AWS.SES({ region: 'us-east-1' });
 
-const FORWARDING_EMAIL = "sreekanthpaleti1999@gmail.com"; 
+const FORWARD_TO = "sreekanthpaleti1999@gmail.com";
+const SENDER_EMAIL = "support@sree84s.site";
 
-exports.handler = async (event) => {
-    console.log("SNS Event received:", JSON.stringify(event));
-
-    const message = JSON.parse(event.Records[0].Sns.Message);
-    const mail = message.mail;
-    
-    // S3 ఆబ్జెక్ట్ వివరాలను సురక్షితంగా పొందండి
-    const s3Object = message.receipt && message.receipt.action && message.receipt.action.object;
-
-    // S3 ఆబ్జెక్ట్ డీటెయిల్స్ లేకపోతేనే ఆపివేయాలి (AMAZON_SES_SETUP_NOTIFICATION చెక్ తొలగించబడింది)
-    if (!s3Object) { 
-        console.log("Error: S3 object details are missing in the SNS notification. Skipping processing.");
-        return;
-    }
-
+exports.handler = async (event, context) => {
     try {
-        // 1. S3 నుండి ఇమెయిల్ ఫైల్‌ను పొందండి
+        const mail = event.Records[0].ses.mail;
+        const s3Bucket = "sree84s-ses-inbound-mail-storage-0102";
+        const s3Key = mail.messageId;
+
+        console.log(`INFO Email received. S3 Bucket: ${s3Bucket}, Key: ${s3Key}, MessageId: ${mail.messageId}`);
+        
+        // Read the raw email data from S3
         const data = await S3.getObject({
-            Bucket: s3Object.bucketName,
-            Key: s3Object.key
+            Bucket: s3Bucket,
+            Key: s3Key
         }).promise();
 
-        const email = data.Body.toString();
-        console.log("Email content loaded from S3.");
+        // Prepare email content for forwarding
+        const emailContent = data.Body.toString();
 
-        // 2. SES ద్వారా ఇమెయిల్ ను ఫార్వార్డ్ చేయండి
-        const sendParams = {
+        // Parameters for sending the raw email via SES
+        const params = {
+            Destinations: [FORWARD_TO],
+            Source: SENDER_EMAIL,
             RawMessage: {
-                Data: email 
-            },
-            Destinations: [FORWARDING_EMAIL],
-            Source: FORWARDING_EMAIL, 
+                Data: emailContent
+            }
         };
 
-        await SES.sendRawEmail(sendParams).promise();
-        console.log(`Successfully forwarded email to: ${FORWARDING_EMAIL}`);
+        // Send the email (forwarding)
+        await SES.sendRawEmail(params).promise();
+        
+        console.log(`SUCCESS Email forwarded successfully to ${FORWARD_TO}`);
 
-        // 3. S3 నుండి ఇమెయిల్ ఫైల్‌ను తొలగించండి 
+        // Delete the email from S3 (optional, but good practice)
         await S3.deleteObject({
-            Bucket: s3Object.bucketName,
-            Key: s3Object.key
+            Bucket: s3Bucket,
+            Key: s3Key
         }).promise();
-        console.log(`Successfully deleted email from S3: ${s3Object.key}`);
+        
+        console.log(`INFO S3 object ${s3Key} deleted.`);
+
+        return { statusCode: 200, body: `Email forwarded to ${FORWARD_TO}` };
 
     } catch (error) {
-        console.error("Error processing email:", error);
-        throw error;
+        console.error("ERROR during email forwarding:", error);
+        return { statusCode: 500, body: `Error processing email: ${error.message}` };
     }
 };

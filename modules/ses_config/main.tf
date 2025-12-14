@@ -122,7 +122,7 @@ resource "aws_lambda_permission" "allow_ses_to_trigger_forwarder" {
   action        = "lambda:InvokeFunction"
   function_name = "vm-hosting-ses-forwarder-lambda" 
   principal     = "ses.amazonaws.com"
-  source_arn    = aws_ses_receipt_rule_set.multi_client_rules.arn
+  //source_arn    = aws_ses_receipt_rule_set.multi_client_rules.arn
 }
 
 resource "aws_sns_topic" "ses_bounce_topic" {

@@ -7,7 +7,7 @@ resource "aws_lambda_function" "ses_forwarder_lambda" {
   function_name    = "${var.project_name}-ses-forwarder-lambda"
   role             = aws_iam_role.ses_forwarder_role.arn
   handler          = "forward_lambda_code.handler"
-  runtime          = "nodejs18.x"
+  runtime          = "nodejs16.x"
   timeout          = 30
   source_code_hash = data.archive_file.lambda_archive.output_base64sha256
 }

@@ -22,22 +22,30 @@ resource "aws_ses_receipt_rule_set" "main_rule_set" {
 }
 
 resource "aws_ses_receipt_rule" "forwarding_rule" {
-  for_each            = var.client_domains
-  name                = "${each.key}-forwarding-rule"
-  rule_set_name       = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
-  enabled             = true
-  scan_enabled        = true
+  for_each      = var.client_domains
+  name          = "${each.key}-forwarding-rule"
+  rule_set_name = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
+  enabled       = true
+  scan_enabled  = true
 
-  recipients          = [each.value]
+  
+  recipients    = [each.value] 
 
-  # 🛑 తుది depends_on: S3 Policy అప్‌డేట్ అయ్యాకే Rule క్రియేట్ అవ్వాలి.
+  
   depends_on = [
     aws_s3_bucket_policy.ses_s3_delivery_policy 
   ]
   
+  
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
     position    = 1 
+  }
+
+  
+  sns_action {
+    position  = 2
+    topic_arn = aws_sns_topic.ses_notification_topic.arn
   }
 }
 

@@ -7,3 +7,8 @@ variable "aws_region" {
   description = "The AWS region where SES is configured (e.g., us-east-1)."
   type        = string
 }
+
+variable "forwarding_email" {
+  description = "Email address to forward incoming SES mail to (e.g., your personal Gmail ID)."
+  type        = string
+}

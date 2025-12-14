@@ -138,6 +138,28 @@ resource "aws_ses_identity_notification_topic" "client_complaint_topic" {
   topic_arn         = aws_sns_topic.ses_complaint_topic.arn
 }
 
+
+
+resource "aws_secretsmanager_secret" "ses_smtp_credentials" {
+  name        = "ses/smtp-credentials"
+  description = "SES SMTP credentials for transactional email sending"
+}
+
+resource "aws_secretsmanager_secret_version" "ses_smtp_credentials_version" {
+  secret_id = aws_secretsmanager_secret.ses_smtp_credentials.id
+  
+  secret_string = jsonencode({
+    SES_SMTP_USERNAME = aws_iam_access_key.smtp_access_key.id
+    SES_SMTP_PASSWORD = aws_iam_access_key.smtp_access_key.secret
+    SES_SMTP_HOST     = "email-smtp.${data.aws_region.current.name}.amazonaws.com"
+    SES_SMTP_PORT     = "587"
+  })
+}
+
+output "secretsmanager_arn" {
+  description = "ARN of the Secrets Manager containing the SES SMTP credentials"
+  value       = aws_secretsmanager_secret.ses_smtp_credentials.arn
+}
 output "smtp_username" {
   description = "The Access Key ID for SES SMTP (Username)"
   value       = aws_iam_access_key.smtp_access_key.id

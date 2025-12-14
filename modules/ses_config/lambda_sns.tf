@@ -31,3 +31,10 @@ resource "aws_lambda_permission" "allow_sns" {
   principal     = "sns.amazonaws.com"
   source_arn    = aws_sns_topic.ses_notification_topic.arn
 }
+
+resource "aws_lambda_permission" "allow_ses" {
+  statement_id  = "AllowExecutionFromSES"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ses_forwarder_lambda.function_name
+  principal     = "ses.amazonaws.com"
+}

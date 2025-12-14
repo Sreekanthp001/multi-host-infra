@@ -88,12 +88,17 @@ module "client_deployment" {
   task_definition_arn           = module.ecs_cluster.task_definition_arn 
 }
 
+# రూట్ main.tf లోని module "ses_configuration" బ్లాక్
+
 module "ses_configuration" {
   source = "./modules/ses_config" 
   
+ 
+  project_name      = var.project_name 
+  
   client_domains = var.client_domains
-  aws_region     = "us-east-1" 
-  forwarding_email  = "sreekanthpaleti1999@gmail.com"
+  aws_region     = "us-east-1" 
+  forwarding_email  = "sreekanthpaleti1999@gmail.com"
 }
 
 

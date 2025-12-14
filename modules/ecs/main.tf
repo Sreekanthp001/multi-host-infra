@@ -77,7 +77,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([
     {
       name      = "client-container"
-      image     = "535462128585.dkr.ecr.us-east-1.amazonaws.com/frontend-app:v6" # Change this to your ECR image URL
+      image     = "535462128585.dkr.ecr.us-east-1.amazonaws.com/frontend-app:latest" # Change this to your ECR image URL
       cpu       = 256
       memory    = 512
       essential = true

@@ -33,3 +33,9 @@ output "ses_smtp_password" {
   value       = module.ses_configuration.smtp_password
   sensitive   = true
 }
+
+variable "project_name" {
+  description = "A unique prefix for all resources created (e.g., 'vm-hosting')."
+  type        = string
+  default     = "vm-hosting" # మీరు కావాలంటే దీన్ని మార్చవచ్చు
+}

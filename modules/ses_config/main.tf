@@ -107,13 +107,22 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
-    position    = 1 
+    position    = 2
   }
 
-  sns_action {
-    position    = 2
-    topic_arn   = aws_sns_topic.ses_notification_topic.arn
+  lambda_action {
+    function_arn = "arn:aws:lambda:us-east-1:535462128585:function:vm-hosting-ses-forwarder-lambda" // <-- మీ ARN ఇక్కడ ఉంది
+    position     = 2
+    invocation_type = "Event"
   }
+}
+
+resource "aws_lambda_permission" "allow_ses_to_trigger_forwarder" {
+  statement_id  = "AllowSESInvocation"
+  action        = "lambda:InvokeFunction"
+  function_name = "vm-hosting-ses-forwarder-lambda" 
+  principal     = "ses.amazonaws.com"
+  source_arn    = aws_ses_receipt_rule_set.multi_client_rules.arn
 }
 
 resource "aws_sns_topic" "ses_bounce_topic" {

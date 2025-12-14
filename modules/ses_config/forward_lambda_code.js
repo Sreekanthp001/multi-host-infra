@@ -12,16 +12,17 @@ exports.handler = async (event) => {
     const message = JSON.parse(event.Records[0].Sns.Message);
     const mail = message.mail;
     
-    // Check for S3 object details safely
+    // S3 ఆబ్జెక్ట్ వివరాలను సురక్షితంగా పొందండి
     const s3Object = message.receipt && message.receipt.action && message.receipt.action.object;
 
-    if (!s3Object || s3Object.key.startsWith('AMAZON_SES_SETUP_NOTIFICATION')) {
-        console.log("Skipping setup notification or missing S3 object details.");
+    // S3 ఆబ్జెక్ట్ డీటెయిల్స్ లేకపోతేనే ఆపివేయాలి (AMAZON_SES_SETUP_NOTIFICATION చెక్ తొలగించబడింది)
+    if (!s3Object) { 
+        console.log("Error: S3 object details are missing in the SNS notification. Skipping processing.");
         return;
     }
 
     try {
-        // 1. Get email file from S3
+        // 1. S3 నుండి ఇమెయిల్ ఫైల్‌ను పొందండి
         const data = await S3.getObject({
             Bucket: s3Object.bucketName,
             Key: s3Object.key
@@ -30,7 +31,7 @@ exports.handler = async (event) => {
         const email = data.Body.toString();
         console.log("Email content loaded from S3.");
 
-        // 2. Forward email using SES
+        // 2. SES ద్వారా ఇమెయిల్ ను ఫార్వార్డ్ చేయండి
         const sendParams = {
             RawMessage: {
                 Data: email 
@@ -42,7 +43,7 @@ exports.handler = async (event) => {
         await SES.sendRawEmail(sendParams).promise();
         console.log(`Successfully forwarded email to: ${FORWARDING_EMAIL}`);
 
-        // 3. Delete email file from S3 
+        // 3. S3 నుండి ఇమెయిల్ ఫైల్‌ను తొలగించండి 
         await S3.deleteObject({
             Bucket: s3Object.bucketName,
             Key: s3Object.key

@@ -2,6 +2,7 @@ variable "project_name" {
   description = "The prefix to use for all SES related resources."
   type        = string
 }
+
 variable "client_domains" {
   description = "A map of client keys (e.g., 'sree84s') to their full domain names (e.g., 'sree84s.site')."
   type        = map(string)

@@ -1,9 +1,4 @@
-# variables.tf (Root Directory)
-
-variable "project_name" {
-  type    = string
-  default = "vm-hosting"
-}
+# variables.tf (Root Direc
 
 variable "aws_region" {
   description = "The AWS region where the main infrastructure will be deployed (e.g., us-east-1)."

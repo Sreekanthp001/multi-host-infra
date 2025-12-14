@@ -107,7 +107,7 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id
-    position    = 2
+    position    = 1
   }
 
   lambda_action {

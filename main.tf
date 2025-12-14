@@ -93,6 +93,7 @@ module "ses_configuration" {
   
   client_domains = var.client_domains
   aws_region     = "us-east-1" 
+  forwarding_email  = "sreekanthpaleti1999@gmail.com"
 }
 
 

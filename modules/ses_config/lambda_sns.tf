@@ -1,7 +1,3 @@
-resource "aws_sns_topic" "ses_notification_topic" {
-  name = "${var.project_name}-ses-notification-topic"
-}
-
 resource "aws_lambda_function" "ses_forwarder_lambda" {
   filename         = "${path.module}/forward_lambda_code.zip"
   function_name    = "${var.project_name}-ses-forwarder-lambda"

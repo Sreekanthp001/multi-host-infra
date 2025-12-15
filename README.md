@@ -24,3 +24,9 @@ The system routes traffic based on the client domain:
 1.  Clone this repository.
 2.  Run `terraform init` and `terraform apply`.
 3.  Refer to the `Runbook.md` for client onboarding procedures.
+
+## 🖼️ Architecture Flow Diagram
+
+This diagram provides a high-level visual representation of the two distinct client traffic flows (Dynamic and Static).
+
+![Multi-Domain Hosting Architecture Flow](images/multi-domain-architecture.png)

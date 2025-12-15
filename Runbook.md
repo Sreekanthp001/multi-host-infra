@@ -2,6 +2,12 @@
 
 This runbook serves as the comprehensive guide for the Operations Team managing the AWS Multi-Domain Hosting Infrastructure. Its primary purpose is to enable any new DevOps Engineer to onboard, manage, and troubleshoot client sites with minimal required context.
 
+##  Platform Architecture Reference
+
+Before performing any operational steps, please reference the architecture diagram below to understand the two distinct client flows within the platform.
+
+![Multi-Domain Hosting Architecture Flow](images/multi-domain-architecture.png)
+
 ## 1. Onboarding a New Client Domain
 
 Our platform supports two distinct hosting models. **Always confirm the client's content management preference before starting.**

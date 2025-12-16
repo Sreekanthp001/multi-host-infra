@@ -1,35 +1,50 @@
-# modules/client_deployment/variables.tf
+// Remove 'client_domains' variable definition if it exists in this file.
+// The module now receives specific client data via 'for_each'.
 
+variable "client_id" {
+  description = "The unique identifier for the client being deployed (e.g., sree84s-prod)."
+  type        = string
+}
+
+variable "domain_name" {
+  description = "The root domain name for the client website."
+  type        = string
+}
+
+variable "docker_image_tag" {
+  description = "The Docker image tag to deploy for this client's ECS service."
+  type        = string
+}
+
+// -------------------------------------------------------------
+// Infrastructure Inputs (These should already be defined)
+// -------------------------------------------------------------
 variable "vpc_id" {
-  description = "The VPC ID where the client resources will be placed."
+  description = "The ID of the VPC."
   type        = string
 }
 
 variable "private_subnets" {
-  description = "List of private subnet IDs for ECS tasks."
+  description = "A list of private subnet IDs."
   type        = list(string)
-}
-variable "client_domains" {
-  description = "Map of client names (key) to their root domain names (value) used for dynamic resource creation."
-  type        = map(string)
-}
-
-variable "ecs_cluster_id" {
-  description = "The ARN/ID of the shared ECS cluster."
-  type        = string
 }
 
 variable "alb_https_listener_arn" {
-  description = "The ARN of the shared HTTPS listener (port 443) on the ALB."
+  description = "The ARN of the ALB HTTPS Listener."
   type        = string
 }
 
-variable "task_definition_arn" {
-  description = "The ARN of the ECS task definition to deploy for this client."
+variable "ecs_cluster_id" {
+  description = "The ID of the shared ECS cluster."
   type        = string
 }
 
 variable "ecs_service_security_group_id" {
-  description = "The ID of the Security Group to apply to the ECS tasks."
+  description = "The Security Group ID for ECS tasks."
+  type        = string
+}
+
+variable "task_definition_arn" {
+  description = "The ARN of the base ECS Task Definition."
   type        = string
 }

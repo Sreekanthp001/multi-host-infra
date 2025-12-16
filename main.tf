@@ -76,20 +76,21 @@ module "route53_acm" {
 module "client_deployment" {
   source  = "./modules/client_deployment"
 
-  // 🔑 CHANGE 3: Loop only through Dynamic clients
+  // Loop only through Dynamic clients
   for_each = { for k, v in var.client_configs : k => v if v.hosting_type == "dynamic" }
 
+  // 🔑 Inputs expected by the Module:
   client_id              = each.key
   domain_name            = each.value.domain_name
+  docker_image_tag       = each.value.docker_image_tag 
   
-  // Inputs derived from other modules (No Change in logic)
+  // Other infrastructure inputs (No change)
   vpc_id                 = module.networking.vpc_id
   private_subnets        = module.networking.private_subnet_ids
   alb_https_listener_arn = module.alb.alb_https_listener_arn
   ecs_cluster_id         = module.ecs_cluster.ecs_cluster_id
   ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id
   task_definition_arn    = module.ecs_cluster.task_definition_arn 
-  docker_image_tag       = each.value.docker_image_tag // New input
 }
 
 

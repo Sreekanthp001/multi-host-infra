@@ -48,3 +48,8 @@ variable "task_definition_arn" {
   description = "The ARN of the base ECS Task Definition."
   type        = string
 }
+
+variable "listener_priority" {
+  description = "The priority number for the ALB listener rule (1 to 50000)."
+  type        = number
+}

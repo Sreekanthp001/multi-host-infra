@@ -83,6 +83,7 @@ module "client_deployment" {
   client_id              = each.key
   domain_name            = each.value.domain_name
   docker_image_tag       = each.value.docker_image_tag 
+  listener_priority      = index(keys(var.client_configs), each.key) + 10
   
   // Other infrastructure inputs (No change)
   vpc_id                 = module.networking.vpc_id

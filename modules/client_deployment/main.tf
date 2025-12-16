@@ -21,23 +21,30 @@ resource "aws_lb_target_group" "client_tg" {
 
 # 2. ALB Listener Rule (Per Client)
 # This routes traffic from the shared ALB's HTTPS listener to this client's Target Group.
+// modules/client_deployment/main.tf
+
 resource "aws_lb_listener_rule" "host_rule" {
-  #for_each = var.client_domains
-  listener_arn = var.alb_https_listener_arn 
-  priority     = index(keys(var.client_domains), each.key) + 1
+  // for_each is intentionally removed/commented out.
+
+  listener_arn = var.alb_https_listener_arn
+  
+  // 1. FIX: Remove the old priority logic. 
+  // We need a new input variable 'priority' from the root module.
+  priority     = var.listener_priority // Assuming a new input variable is created.
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.client_tg[each.key].arn
+    // 2. FIX: Remove [each.key]. client_tg is a single resource in this module.
+    target_group_arn = aws_lb_target_group.client_tg.arn
   }
 
-  # Condition 1: Match traffic for the root domain (e.g., venturemond.com)
   condition {
     host_header {
+      // 3. FIX: Replace each.value with var.domain_name input variable
       values = [
-        each.value,
-        "*.${each.value}"
-      ] 
+        var.domain_name,
+        "www.${var.domain_name}" // Add www subdomain rule
+      ]
     }
   }
 }

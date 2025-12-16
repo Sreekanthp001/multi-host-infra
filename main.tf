@@ -48,19 +48,26 @@ module "ses_configuration" {
 # 5. Route53/ACM Module (Using the new client_configs map)
 module "route53_acm" {
   source      = "./modules/route53_acm"
-  providers = { aws = aws.us_east_1 }
-
-  // 🔑 CHANGE 2: Pass ALL domain names and their configs to the R53/ACM module
-  client_configs_map = var.client_configs 
   
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  // 1. 🔑 FIX: పాత 'domain_names' మరియు 'client_domains' తొలగించండి.
+  // వీటి స్థానంలో కొత్త unified client_configs map ని పంపండి.
+  client_configs_map = var.client_configs
+
   # ALB info
   alb_dns_name = module.alb.alb_dns_name 
   alb_zone_id  = module.alb.alb_zone_id
 
-  # SES info for DNS records
+  # 2. SES module inputs
   verification_tokens = module.ses_configuration.verification_tokens
   dkim_tokens         = module.ses_configuration.dkim_tokens
+  
+  # ✅ మార్పు ఇక్కడ ఉంది: replace ఫంక్షన్ సరిగ్గా ఉపయోగించబడింది.
   ses_mx_record       = replace(module.ses_configuration.ses_mx_record, "10 ", "")
+  
   mail_from_domains   = module.ses_configuration.mail_from_domains 
 }
 

@@ -1,6 +1,6 @@
 # modules/route53_acm/variables.tf
 
-variable "domain_names" {
+/* variable "domain_names" {
   description = "A list of client domain names to host and manage DNS/ACM for"
   type        = list(string)
 }
@@ -9,6 +9,11 @@ variable "domain_names" {
 variable "client_domains" {
   description = "Map of client keys (e.g., 'sree84s') to their root domain names (value). This list drives all infrastructure creation."
   type        = map(string)
+} */
+
+variable "client_configs_map" {
+  description = "The unified map of all client configurations."
+  type        = any 
 }
 
 # 3. ALB 

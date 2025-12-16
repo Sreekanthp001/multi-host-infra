@@ -18,7 +18,7 @@ resource "aws_s3_bucket_website_configuration" "website" {
 // 2. AWS Certificate Manager (ACM) for HTTPS
 // Creates SSL certificate for the client domain.
 resource "aws_acm_certificate" "cert" {
-  domain_name       = var.client_domain
+  domain_name       = var.domain_name
   validation_method = "DNS"
 }
 
@@ -53,7 +53,7 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 // 5. CloudFront Origin Access Identity (OAI)
 // Used to restrict S3 bucket access only to CloudFront.
 resource "aws_cloudfront_origin_access_identity" "oai" {
-  comment = "OAI for ${var.client_domain} static hosting"
+  comment = "OAI for ${var.domain_name} static hosting"
 }
 
 // 6. S3 Bucket Policy (Restricts access to the OAI)
@@ -137,7 +137,7 @@ resource "aws_cloudfront_distribution" "cdn" {
 // 8. Route 53 Alias Record (Domain -> CloudFront)
 resource "aws_route53_record" "root_alias" {
   zone_id = aws_route53_zone.client_zone.zone_id
-  name    = var.client_domain
+  name    = var.domain_name
   type    = "A"
 
   alias {
@@ -149,7 +149,7 @@ resource "aws_route53_record" "root_alias" {
 
 resource "aws_route53_record" "www_alias" {
   zone_id = aws_route53_zone.client_zone.zone_id
-  name    = "www.${var.client_domain}"
+  name    = "www.${var.domain_name}"
   type    = "A"
 
   alias {

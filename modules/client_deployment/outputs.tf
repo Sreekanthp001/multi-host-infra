@@ -12,5 +12,5 @@ output "listener_rule_arn" {
 
 output "ecs_service_name" {
   description = "The name of the ECS service deployed for this client."
-  value = aws_ecs_service.client_service["sree84s-prod"].name
+  value = aws_ecs_service.client_service.name
 }

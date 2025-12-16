@@ -93,8 +93,16 @@ resource "aws_route53_record" "cert_validation_records" {
 
 # 5. Wait for ACM Validation to Complete
 resource "aws_acm_certificate_validation" "cert_validation" {
-  certificate_arn         = aws_acm_certificate.client_cert.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation_records : record.fqdn]
+  // 1. FIX: Add the for_each loop here to iterate over all active domains/certificates
+  for_each = local.active_domains 
+
+  // 2. FIX: Access the specific certificate instance using [each.key]
+  certificate_arn         = aws_acm_certificate.client_cert[each.key].arn
+  
+  // 3. FIX: Access validation records using [each.key] for the corresponding client
+  validation_record_fqdns = [
+    for record in aws_route53_record.cert_validation_records[each.key] : record.fqdn
+  ]
 
   timeouts {
     create = "45m" 

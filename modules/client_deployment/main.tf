@@ -44,29 +44,32 @@ resource "aws_lb_listener_rule" "host_rule" {
 
 # 3. ECS Service (Per Client)
 resource "aws_ecs_service" "client_service" {
-  for_each = var.client_domains
+  // for_each is intentionally commented out/removed. 
+  // The root module's for_each handles the loop.
 
-  name            = "${each.key}-svc"
+  // 1. FIX: Replace each.key with the input variable var.client_id
+  name            = "${var.client_id}-svc"
+  
   cluster         = var.ecs_cluster_id
   task_definition = var.task_definition_arn
   desired_count   = 2 
   launch_type     = "FARGATE"
   
-  #force_new_deployment = true 
   network_configuration {
-    subnets         = var.private_subnets
-    security_groups = [var.ecs_service_security_group_id]
+    subnets          = var.private_subnets
+    security_groups  = [var.ecs_service_security_group_id]
     assign_public_ip = false
   }
 
-  # Connects the ECS service to the specific Target Group
   load_balancer {
-    target_group_arn = aws_lb_target_group.client_tg[each.key].arn
-    container_name   = "client-container" # Must match the name in your task definition
+    // 2. FIX: Remove [each.key] as client_tg should be a single resource in this module.
+    target_group_arn = aws_lb_target_group.client_tg.arn
+    
+    container_name   = "client-container" // Must match the name in your task definition
     container_port   = 80 
   }
 
   lifecycle {
-    ignore_changes = [desired_count] # Allows autoscaling to adjust desired_count
+    ignore_changes = [desired_count]
   }
 }

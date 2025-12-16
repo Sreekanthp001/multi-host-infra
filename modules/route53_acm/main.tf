@@ -57,21 +57,38 @@ resource "aws_acm_certificate" "client_cert" {
 
 # 4. Create DNS Validation Records in the RESPECTIVE Hosted Zone
 resource "aws_route53_record" "cert_validation_records" {
+  // 1. FIX: Combine the outer loop (client_configs) and inner loop (dvo) 
+  // into a single flattened map structure for for_each.
+
   for_each = {
-    for dvo in aws_acm_certificate.client_cert[each.key].domain_validation_options : dvo.domain_name => dvo
+    // We loop over all ACM certificates created in the module (one per client).
+    for dvo in flatten([
+      for client_id, cert in aws_acm_certificate.client_cert : [
+        for dvo in cert.domain_validation_options : {
+          # Create a unique key (client_id + dvo_domain_name)
+          key                 = "${client_id}-${dvo.domain_name}" 
+          client_id           = client_id
+          domain_name         = dvo.domain_name
+          resource_record_name  = dvo.resource_record_name
+          resource_record_type  = dvo.resource_record_type
+          resource_record_value = dvo.resource_record_value
+        }
+      ]
+    ]) : dvo.key => dvo # Map by the unique key
   }
   
   allow_overwrite = true
-  name            = each.value.resource_record_name
-  type            = each.value.resource_record_type
-  records         = [each.value.resource_record_value]
-  ttl             = 60
+  
+  # Access data from the flattened map using each.value
+  name    = each.value.resource_record_name
+  type    = each.value.resource_record_type
+  records = [each.value.resource_record_value]
+  ttl     = 60
 
-  # CRITICAL FIX: Dynamically find the Hosted Zone ID by removing the wildcard prefix ("*.")
-  # "*.calvio.store" -> "calvio.store" (which is a valid key in local.zone_ids)
-  zone_id = local.zone_ids[
-    replace(each.value.domain_name, "*.","")
-  ]
+  # 2. Zone ID Fix: Use the client_id to find the correct Hosted Zone.
+  # We assume the Hosted Zone names match the certificate domain name.
+  # The key for aws_route53_zone.client_hosted_zones is the client_id.
+  zone_id = aws_route53_zone.client_hosted_zones[each.value.client_id].zone_id
 }
 
 # 5. Wait for ACM Validation to Complete

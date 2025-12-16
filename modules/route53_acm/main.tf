@@ -1,27 +1,36 @@
 data "aws_region" "current" {}
 
 locals {
-  # --- DKIM and Data Setup ---
-  all_dkim_tokens = flatten(values(var.dkim_tokens))
-
+  // 1. All active domains (used for R53 Zone creation and ACM)
+  // We use the new client_configs_map passed from the root module.
+  active_domains = { 
+    for k, v in var.client_configs_map : k => v.domain_name 
+  }
+  
+  // 2. SES DKIM Token Logic (Refactored for the new structure)
+  // Flatten the DKIM tokens received from the SES module for all clients.
+  // We rely on the SES module to pass the dkim_tokens as a map indexed by client_id.
+  
   dkim_records_data = flatten([
-    for k, domain_name in var.client_domains : [
+    for client_id, domain_name in local.active_domains : [
       for i in range(3) : {
+        // We use the client_id to access the correct set of DKIM tokens from the var.dkim_tokens map
         domain_name = domain_name
-        token_value = element(local.all_dkim_tokens, (index(values(var.client_domains), domain_name) * 3) + i)
+        token_name  = element(var.dkim_tokens[client_id], i)
+        token_value = element(var.dkim_tokens[client_id], i)
       }
     ]
   ])
   
-  # 2. Local Variable: Mapping domain name to Hosted Zone ID
-  # This block was previously outside the main locals block, causing errors.
+  // 3. Zone IDs Map (Must be defined AFTER the resource)
+  // NOTE: This must reference the resource created later in this file.
   zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
 }
 
 # 1. Hosted Zone Creation (Multi-Zone)
 # Creates a Hosted Zone for every domain in var.client_domains
 resource "aws_route53_zone" "client_hosted_zones" {
-  for_each = var.client_domains 
+  for_each = local.active_domains 
 
   name    = each.value 
   comment = "Managed by Terraform for Client: ${each.key}"
@@ -30,15 +39,15 @@ resource "aws_route53_zone" "client_hosted_zones" {
 
 # 3. ACM Certificate Creation (Single Multi-Domain SAN Certificate)
 resource "aws_acm_certificate" "client_cert" {
-  provider = aws
+  // ✅ NEW LOGIC: Use the map for for_each
+  for_each = local.active_domains 
   
-  domain_name               = var.domain_names[0] 
-  validation_method         = "DNS"
-
-  subject_alternative_names = flatten([
-    for domain in var.domain_names : [domain, "*.${domain}"]
-  ])
-
+  domain_name       = each.value
+  validation_method = "DNS"
+  
+  // Subject Alternative Names (SANs) - for www version
+  subject_alternative_names = ["*.${each.value}", "www.${each.value}"]
+  
   lifecycle {
     create_before_destroy = true
   }
@@ -77,9 +86,15 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 
 # 6. Route 53 A Records (Alias to ALB)
 resource "aws_route53_record" "alb_alias" {
-  for_each = var.client_domains
+  // Filter the client_configs_map to include ONLY clients with hosting_type = "dynamic".
+  // Static clients (calvio.store) will be ignored here and handled by the CloudFront records.
+  for_each = {
+    for client_id, config in var.client_configs_map : client_id => config.domain_name
+    if config.hosting_type == "dynamic"
+  }
   
-  # Zone ID reference using the domain name (each.value)
+  // Zone ID reference using the domain name (each.value is the domain name)
+  // This relies on the 'local.zone_ids' block being correctly defined to map domain_name -> zone_id.
   zone_id  = local.zone_ids[each.value] 
   name     = each.value 
 

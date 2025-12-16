@@ -9,6 +9,12 @@ resource "aws_lb_target_group" "client_tg" {
   vpc_id      = var.vpc_id
   target_type = "ip"
 
+  lifecycle {
+    ignore_changes = [
+      name,
+    ]
+  }
+  
   health_check {
     path                = "/"
     protocol            = "HTTP"

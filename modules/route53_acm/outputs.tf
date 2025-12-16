@@ -1,7 +1,9 @@
 # modules/route53_acm/outputs.tt
 output "acm_certificate_arn" {
   description = "The ARN of the issued ACM certificate."
-  value       = aws_acm_certificate.client_cert.arn
+  value = {
+    for k, v in aws_acm_certificate.client_cert : k => v.arn
+  }
 }
 output "hosted_zone_ids" {
   description = "The IDs of the created Route 53 Hosted Zones"

@@ -58,7 +58,7 @@ resource "aws_acm_certificate" "client_cert" {
 # 4. Create DNS Validation Records in the RESPECTIVE Hosted Zone
 resource "aws_route53_record" "cert_validation_records" {
   for_each = {
-    for dvo in aws_acm_certificate.client_cert.domain_validation_options : dvo.domain_name => dvo
+    for dvo in aws_acm_certificate.client_cert[each.key].domain_validation_options : dvo.domain_name => dvo
   }
   
   allow_overwrite = true
@@ -109,7 +109,7 @@ resource "aws_route53_record" "alb_alias" {
 
 # 7. SES Verification TXT Record
 resource "aws_route53_record" "ses_verification_txt" {
-  for_each = var.client_domains
+  for_each = local.active_domains
 
   # Zone ID reference using the domain name (each.value)
   zone_id = local.zone_ids[each.value] 
@@ -121,7 +121,7 @@ resource "aws_route53_record" "ses_verification_txt" {
 
 # 8. SES MX Record (Incoming Mail)
 resource "aws_route53_record" "client_mx_record" {
-  for_each = var.client_domains
+  for_each = local.active_domains
 
   # Zone ID reference using the domain name (each.value)
   zone_id = local.zone_ids[each.value] 
@@ -152,7 +152,7 @@ resource "aws_route53_record" "ses_dkim_records" {
 
 # SPF Record (TXT)
 resource "aws_route53_record" "client_spf_record" {
-  for_each = var.client_domains
+  for_each = local.active_domains
   zone_id = local.zone_ids[each.value] 
   name    = each.key
   type    = "TXT"
@@ -164,7 +164,7 @@ resource "aws_route53_record" "client_spf_record" {
 
 # DMARC Record (TXT)
 resource "aws_route53_record" "client_dmarc_record" {
-  for_each = var.client_domains
+  for_each = local.active_domains
   zone_id = local.zone_ids[each.value] 
   name    = "_dmarc.${each.key}"
   type    = "TXT"
@@ -176,7 +176,7 @@ resource "aws_route53_record" "client_dmarc_record" {
 
 # Custom MAIL FROM for MX Record 
 resource "aws_route53_record" "client_mail_from_mx" {
-  for_each = var.client_domains
+  for_each = local.active_domains
   zone_id = local.zone_ids[each.value] 
   name    = var.mail_from_domains[each.key]
   type    = "MX"
@@ -188,7 +188,7 @@ resource "aws_route53_record" "client_mail_from_mx" {
 
 # Custom MAIL FROM for SPF TXT Record
 resource "aws_route53_record" "client_mail_from_txt" {
-  for_each = var.client_domains
+  for_each = local.active_domains
   zone_id = local.zone_ids[each.value] 
   name    = var.mail_from_domains[each.key]
   type    = "TXT"

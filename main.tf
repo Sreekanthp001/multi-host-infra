@@ -13,8 +13,13 @@ module "alb" {
   project_name        = var.project_name
   vpc_id              = module.networking.vpc_id
   public_subnet_ids   = module.networking.public_subnet_ids
-  acm_certificate_arn = module.route53_acm.acm_certificate_arn
-  acm_validation_resource = module.route53_acm.acm_validation_resource
+
+  // FIX: acm_certificate_arn output is now a map. Extract the ARN for the dynamic client ('sree84s-prod' or similar default key).
+  // Assuming 'sree84s-prod' is the key for the main certificate used by the ALB listener.
+  acm_certificate_arn = module.route53_acm.acm_certificate_arn["sree84s-prod"]
+  
+  // FIX: acm_validation_resource is now a map. Extract the specific resource for the dynamic client.
+  acm_validation_resource = module.route53_acm.acm_validation_resource["sree84s-prod"]
 }
 
 module "ecr" {
@@ -84,7 +89,7 @@ module "client_deployment" {
   domain_name            = each.value.domain_name
   docker_image_tag       = each.value.docker_image_tag 
   listener_priority      = index(keys(var.client_configs), each.key) + 10
-  
+
   // Other infrastructure inputs (No change)
   vpc_id                 = module.networking.vpc_id
   private_subnets        = module.networking.private_subnet_ids

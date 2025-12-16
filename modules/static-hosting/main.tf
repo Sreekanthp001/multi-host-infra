@@ -24,7 +24,7 @@ resource "aws_acm_certificate" "cert" {
 
 // 3. Route 53 Hosted Zone for the Client Domain
 resource "aws_route53_zone" "client_zone" {
-  name = var.client_domain
+  name = var.domain_name
 }
 
 // 4. ACM Validation Record

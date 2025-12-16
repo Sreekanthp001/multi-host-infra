@@ -106,8 +106,8 @@ module "static_client_site" {
 
   for_each = { for k, v in var.client_configs : k => v if v.hosting_type == "static" }
 
-  client_id     = each.key // <--- మాడ్యూల్ లో లేదు (Error 1)
-  client_domain = each.value.domain_name
-  s3_prefix     = var.s3_bucket_prefix
-  s3_suffix     = each.value.s3_bucket_suffix // <--- మాడ్యూల్ లో లేదు (Error 2)
+  client_id   = each.key 
+  domain_name = each.value.domain_name
+  s3_prefix   = var.s3_bucket_prefix 
+  s3_suffix   = each.value.s3_bucket_suffix 
 }

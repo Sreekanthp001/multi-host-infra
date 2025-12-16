@@ -1,104 +1,100 @@
-# main.tf (Root Directory - FINAL CORRECTED VERSION)
+# main.tf (FINAL REFACTORING FOR SCALABILITY)
 
-# 1. Networking Module
+# 1. Networking Module (No Change)
 module "networking" {
   source       = "./modules/networking"
   project_name = var.project_name
   vpc_cidr     = "10.0.0.0/16"
 }
 
-# 2. ALB Module (Requires Networking outputs and ACM ARN)
+# 2. ALB Module (No Change)
 module "alb" {
   source              = "./modules/alb"
   project_name        = var.project_name
   vpc_id              = module.networking.vpc_id
-  public_subnet_ids   = module.networking.public_subnet_ids # Check outputs.tf for exact name
-  
-  # 🔑 FIX 1: ACM Certificate ARN ను జోడించండి (ALB Listener కు అవసరం)
+  public_subnet_ids   = module.networking.public_subnet_ids
   acm_certificate_arn = module.route53_acm.acm_certificate_arn
-
-  # 🔑 FIX 2: ACM Validation Resource ను module output ద్వారా పాస్ చేయండి (depends_on కోసం)
   acm_validation_resource = module.route53_acm.acm_validation_resource
 }
 
 module "ecr" {
   source          = "./modules/ecr"
-  repository_name = "frontend-app" # మీ Docker Image పేరు
+  repository_name = "frontend-app" 
 }
 
-# 3. ECS Cluster Module (Includes Cluster, Task Definition, and SG logic)
+# 3. ECS Cluster Module (No Change)
 module "ecs_cluster" {
-  source       = "./modules/ecs"
-  project_name = var.project_name
-  aws_region = var.aws_region
-  vpc_id       = module.networking.vpc_id
-  alb_sg_id    = module.alb.alb_sg_id # Check outputs.tf for exact name
+  source             = "./modules/ecs"
+  project_name       = var.project_name
+  aws_region         = var.aws_region
+  vpc_id             = module.networking.vpc_id
+  alb_sg_id          = module.alb.alb_sg_id
   ecr_repository_url = module.ecr.repository_url
 }
 
-# 4. Route53/ACM Module (Runs in us-east-1, depends on ALB outputs)
-module "route53_acm" {
-  source       = "./modules/route53_acm"
+# 4. SES Configuration Module (Using the new client_configs map)
+module "ses_configuration" {
+  source             = "./modules/ses_config" 
+  project_name       = var.project_name 
   
-  domain_names = values(var.client_domains)
+  // 🔑 CHANGE 1: Using client_configs map and extracting domain names
+  client_domains     = { for k, v in var.client_configs : k => v.domain_name }
+  
+  aws_region         = "us-east-1" 
+  forwarding_email   = "sreekanthpaleti1999@gmail.com"
+}
 
-  providers = {
-    aws = aws.us_east_1
-  }
 
+# 5. Route53/ACM Module (Using the new client_configs map)
+module "route53_acm" {
+  source      = "./modules/route53_acm"
+  providers = { aws = aws.us_east_1 }
+
+  // 🔑 CHANGE 2: Pass ALL domain names and their configs to the R53/ACM module
+  client_configs_map = var.client_configs 
+  
   # ALB info
   alb_dns_name = module.alb.alb_dns_name 
   alb_zone_id  = module.alb.alb_zone_id
 
-  # 1. client_domains 
-  client_domains = var.client_domains
-  
-  # 2. SES module
+  # SES info for DNS records
   verification_tokens = module.ses_configuration.verification_tokens
   dkim_tokens         = module.ses_configuration.dkim_tokens
-  
-  # ✅ మార్పు ఇక్కడ ఉంది: replace ఫంక్షన్ సరిగ్గా ఉపయోగించబడింది.
   ses_mx_record       = replace(module.ses_configuration.ses_mx_record, "10 ", "")
-  
-  mail_from_domains = module.ses_configuration.mail_from_domains 
-  # 🔑 ACTION: Ensure module.route53_acm/outputs.tf contains 'acm_certificate_arn'
+  mail_from_domains   = module.ses_configuration.mail_from_domains 
 }
 
-# 5. Deploy Each Client Website (Scalable Loop)
-# main.tf (FINAL CORRECTIONS ON DEPENDENCIES)
 
-# ... (rest of your root main.tf code) ...
-
-# 5. Deploy Each Client Website (Scalable Loop)
+# 6. Dynamic Client Deployment (Client 1 - ECS Service, Target Group, ALB Rule)
 module "client_deployment" {
-  source   = "./modules/client_deployment"
+  source  = "./modules/client_deployment"
 
-  client_domains = var.client_domains
-  # Inputs derived from the for_each loop (Fixes the current "Missing required argument" errors)
-  # 1. Networking Inputs
-  vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnet_ids 
+  // 🔑 CHANGE 3: Loop only through Dynamic clients
+  for_each = { for k, v in var.client_configs : k => v if v.hosting_type == "dynamic" }
 
-  # 2. ALB/Listener Input (Uses the exact name from your modules/alb/outputs.tf)
+  client_id              = each.key
+  domain_name            = each.value.domain_name
+  
+  // Inputs derived from other modules (No Change in logic)
+  vpc_id                 = module.networking.vpc_id
+  private_subnets        = module.networking.private_subnet_ids
   alb_https_listener_arn = module.alb.alb_https_listener_arn
-
-  # 3. ECS Inputs (Uses the exact names from your modules/ecs/outputs.tf)
-  ecs_cluster_id                = module.ecs_cluster.ecs_cluster_id
+  ecs_cluster_id         = module.ecs_cluster.ecs_cluster_id
   ecs_service_security_group_id = module.ecs_cluster.ecs_tasks_sg_id
-  task_definition_arn           = module.ecs_cluster.task_definition_arn 
+  task_definition_arn    = module.ecs_cluster.task_definition_arn 
+  docker_image_tag       = each.value.docker_image_tag // New input
 }
 
 
-module "ses_configuration" {
-  source            = "./modules/ses_config" 
+// 7. Static Client Deployment (Client 2 - S3, CloudFront)
+module "static_client_site" {
+  source = "./modules/static-hosting"
 
+  // 🔑 CHANGE 4: Loop only through Static clients
+  for_each = { for k, v in var.client_configs : k => v if v.hosting_type == "static" }
 
-  project_name      = var.project_name 
-  
-  client_domains    = var.client_domains
-  
-  aws_region        = "us-east-1" 
-  forwarding_email  = "sreekanthpaleti1999@gmail.com"
+  client_id     = each.key
+  client_domain = each.value.domain_name
+  s3_prefix     = var.s3_bucket_prefix
+  s3_suffix     = each.value.s3_bucket_suffix
 }
-
-

@@ -1,6 +1,6 @@
 // 1. S3 Bucket for Static Content
 resource "aws_s3_bucket" "content" {
-  bucket = "${var.s3_prefix}-${replace(var.client_domain, ".", "-")}"
+  bucket = "${var.s3_prefix}-${var.client_id}-${var.s3_suffix}"
 }
 
 resource "aws_s3_bucket_website_configuration" "website" {

@@ -98,11 +98,10 @@ module "client_deployment" {
 module "static_client_site" {
   source = "./modules/static-hosting"
 
-  // 🔑 CHANGE 4: Loop only through Static clients
   for_each = { for k, v in var.client_configs : k => v if v.hosting_type == "static" }
 
-  client_id     = each.key
+  client_id     = each.key // <--- మాడ్యూల్ లో లేదు (Error 1)
   client_domain = each.value.domain_name
   s3_prefix     = var.s3_bucket_prefix
-  s3_suffix     = each.value.s3_bucket_suffix
+  s3_suffix     = each.value.s3_bucket_suffix // <--- మాడ్యూల్ లో లేదు (Error 2)
 }

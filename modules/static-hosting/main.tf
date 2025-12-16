@@ -18,8 +18,15 @@ resource "aws_s3_bucket_website_configuration" "website" {
 // 2. AWS Certificate Manager (ACM) for HTTPS
 // Creates SSL certificate for the client domain.
 resource "aws_acm_certificate" "cert" {
-  domain_name       = var.domain_name
+  domain_name       = var.domain_name 
+  
+  subject_alternative_names = ["www.${var.domain_name}"] 
+  
   validation_method = "DNS"
+  
+  tags = {
+    Name = "${var.client_id}-static-cert"
+  }
 }
 
 // 3. Route 53 Hosted Zone for the Client Domain

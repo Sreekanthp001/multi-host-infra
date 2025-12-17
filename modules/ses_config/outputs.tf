@@ -13,6 +13,5 @@ output "dkim_tokens" {
 }
 
 output "ses_mx_record" {
-  description = "MX record value pointing to the regional SES endpoint."
-  value       = "10 inbound-smtp.${var.aws_region}.amazonaws.com"
+  value = "10 feedback-smtp.us-east-1.amazonaws.com" # Or your dynamic logic
 }

@@ -40,8 +40,8 @@ variable "dkim_tokens" {
 # 5. FIXED: ses_mx_record type
 # Meeru 'string' ani icharu, kaani ses_config module nundi map vasthe idi 'map(string)' ga undali
 variable "ses_mx_record" {
-  description = "MX record values pointing to regional SES endpoints"
-  type        = map(string)
+  description = "MX record value pointing to the regional SES endpoint"
+  type        = string  # Map badulu string ani pettandi
 }
 
 variable "mail_from_domains" {

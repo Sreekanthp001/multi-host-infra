@@ -158,7 +158,7 @@ resource "aws_route53_record" "client_mx_record" {
 
   # Priority (10) added to the records. Check var.ses_mx_record definition.
   records = [
-    "10 ${var.ses_mx_record}" 
+    var.ses_mx_record 
   ]
 }
 

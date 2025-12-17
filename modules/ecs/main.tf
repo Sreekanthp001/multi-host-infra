@@ -65,34 +65,34 @@ resource "aws_security_group" "ecs_tasks_sg" {
 # Defines the actual task definition used by the Fargate service
 resource "aws_ecs_task_definition" "main" {
   family = "${var.project_name}-task"
-  cpu                      = 256
-  memory                   = 512
+  cpu    = 256
+  memory = 512
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   
-  # Assume you are using a placeholder role ARN from your outputs
+  # Assumes these roles are defined elsewhere
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
     {
       name      = "client-container"
-      image     = "535462128585.dkr.ecr.us-east-1.amazonaws.com/frontend-app:latest" # Change this to your ECR image URL
+      image     = "535462128585.dkr.ecr.us-east-1.amazonaws.com/sree84s-prod-image:latest-v2" 
       cpu       = 256
       memory    = 512
       essential = true
       portMappings = [
         {
-          containerPort = 80 # This must match the port in client_deployment/main.tf
+          containerPort = 80 
           hostPort      = 80
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group": "${aws_cloudwatch_log_group.client_log_group.name}", 
-          "awslogs-region": "us-east-1", // మీ AWS ప్రాంతం
-          "awslogs-stream-prefix": "ecs"
+          "awslogs-group"       = aws_cloudwatch_log_group.client_log_group.name, 
+          "awslogs-region"      = "us-east-1",
+          "awslogs-stream-prefix" = "ecs"
         }
       }
     }

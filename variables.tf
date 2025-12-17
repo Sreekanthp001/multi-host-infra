@@ -39,10 +39,12 @@ variable "client_configs" {
       domain_name          = "sree84s.site",
       hosting_type         = "dynamic",
       docker_image_tag     = "v1.2"
+      email_accounts       = ["info", "support"]
     },
     "calvio-store" = {
       domain_name          = "calvio.store",
       hosting_type         = "static"
+      email_accounts       = ["admin"]
     }
   }
 }

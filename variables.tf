@@ -28,6 +28,7 @@ variable "client_configs" {
   type = map(object({
     domain_name           = string
     hosting_type          = string # Must be "dynamic" or "static"
+    email_accounts        = list(string)
     docker_image_tag      = optional(string, "latest") # Required for "dynamic"
     s3_bucket_suffix      = optional(string, "")       # Custom suffix for static S3 bucket
     enable_email_forward  = optional(bool, false)      # Whether to set up SES forwarding

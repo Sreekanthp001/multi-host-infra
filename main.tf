@@ -38,7 +38,7 @@ module "ecs_cluster" {
 }
 
 # 4. SES Configuration Module (Using the new client_configs map)
-module "ses_configuration" {
+module "ses_config" {
   source             = "./modules/ses_config" 
   project_name       = var.project_name 
   client_configs_map = var.client_configs

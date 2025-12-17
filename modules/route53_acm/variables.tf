@@ -1,19 +1,18 @@
-# modules/route53_acm/variables.tf
-
-/* variable "domain_names" {
-  description = "A list of client domain names to host and manage DNS/ACM for"
-  type        = list(string)
+# 1. ADDED: project_name variable (Meeru root main.tf nundi idi pamputhunnaru kabatti thappakunda undali)
+variable "project_name" {
+  description = "A unique prefix for naming resources"
+  type        = string
 }
 
-
-variable "client_domains" {
-  description = "Map of client keys (e.g., 'sree84s') to their root domain names (value). This list drives all infrastructure creation."
-  type        = map(string)
-} */
-
+# 2. UPDATED: client_configs_map type
+# 'any' vaadadam kante explicit type ivvadam best practice for debugging
 variable "client_configs_map" {
   description = "The unified map of all client configurations."
-  type        = any 
+  type = map(object({
+    domain_name    = string
+    hosting_type   = string
+    email_accounts = list(string)
+  }))
 }
 
 # 3. ALB 
@@ -29,22 +28,23 @@ variable "alb_zone_id" {
 
 # 4. SES config
 variable "verification_tokens" {
-  description = "Map of client key to SES verification token (from ses_config module output)."
+  description = "Map of client key to SES verification token"
   type        = map(string)
 }
 
 variable "dkim_tokens" {
-  description = "Map of client key to a list of DKIM tokens for CNAME records (from ses_config module output)."
-  
+  description = "Map of client key to a list of DKIM tokens"
   type        = map(list(string))
 }
 
+# 5. FIXED: ses_mx_record type
+# Meeru 'string' ani icharu, kaani ses_config module nundi map vasthe idi 'map(string)' ga undali
 variable "ses_mx_record" {
-  description = "MX record value pointing to the regional SES endpoint (from ses_config module output)."
-  type        = string
+  description = "MX record values pointing to regional SES endpoints"
+  type        = map(string)
 }
 
 variable "mail_from_domains" {
-  description = "Map of client domains to their configured SES MAIL FROM sub-domains (e.g. mail.sree84s.site)"
+  description = "Map of client domains to their SES MAIL FROM sub-domains"
   type        = map(string)
 }

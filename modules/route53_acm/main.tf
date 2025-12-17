@@ -178,39 +178,34 @@ resource "aws_route53_record" "ses_dkim_records" {
 }
 
 # SPF Record (TXT)
+# SPF Record
 resource "aws_route53_record" "client_spf_record" {
   for_each = local.active_domains
-  zone_id = local.zone_ids[each.value] 
-  name    = each.key
-  type    = "TXT"
-  ttl     = 600
-  records = [
-    "v=spf1 include:amazonses.com ~all",
-  ]
+  zone_id  = local.zone_ids[each.value] 
+  name     = each.value
+  type     = "TXT"
+  ttl      = 600
+  records  = ["v=spf1 include:amazonses.com ~all"]
 }
 
-# DMARC Record (TXT)
+# DMARC Record (Tells receivers what to do if SPF/DKIM fails)
 resource "aws_route53_record" "client_dmarc_record" {
   for_each = local.active_domains
-  zone_id = local.zone_ids[each.value] 
-  name    = "_dmarc.${each.key}"
-  type    = "TXT"
-  ttl     = 600
-  records = [
-    "v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.key}; pct=100; adkim=r; aspf=r",
-  ]
+  zone_id  = local.zone_ids[each.value] 
+  name     = "_dmarc.${each.value}"
+  type     = "TXT"
+  ttl      = 600
+  records  = ["v=DMARC1; p=quarantine; adkim=r; aspf=r"]
 }
 
-# Custom MAIL FROM for MX Record 
+# Custom MAIL FROM (Essential for professional outgoing flow)
 resource "aws_route53_record" "client_mail_from_mx" {
   for_each = local.active_domains
-  zone_id = local.zone_ids[each.value] 
-  name    = var.mail_from_domains[each.key]
-  type    = "MX"
-  ttl     = 600
-  records = [
-    "10 feedback-smtp.${data.aws_region.current.name}.amazonaws.com", 
-  ]
+  zone_id  = local.zone_ids[each.value] 
+  name     = "mail.${each.value}" # Custom sub-domain
+  type     = "MX"
+  ttl      = 600
+  records  = ["10 feedback-smtp.${data.aws_region.current.name}.amazonaws.com"]
 }
 
 # Custom MAIL FROM for SPF TXT Record

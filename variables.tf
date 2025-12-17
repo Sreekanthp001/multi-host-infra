@@ -57,3 +57,11 @@ variable "shared_r53_zone_id" {
   type        = string
   default     = ""
 }
+
+variable "client_configs_map" {
+  type = map(object({
+    domain_name    = string
+    hosting_type   = string # "static" or "dynamic"
+    email_accounts = list(string) # e.g., ["info", "support", "admin"]
+  }))
+}

@@ -93,13 +93,15 @@ resource "aws_ses_receipt_rule_set" "main_rule_set" {
 }
 
 resource "aws_ses_receipt_rule" "forwarding_rule" {
-  for_each      = var.client_domains
+  for_each      = var.client_configs_map # Using the full map to access email_accounts list
   name          = "${each.key}-forwarding-rule"
   rule_set_name = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
   enabled       = true
   scan_enabled  = true
 
-  recipients = [each.value] 
+  # This logic dynamically creates the list of recipients:
+  # If email_accounts = ["info", "support"], it creates ["info@domain.com", "support@domain.com"]
+  recipients = [for account in each.value.email_accounts : "${account}@${each.value.domain_name}"]
 
   depends_on = [
     aws_s3_bucket_policy.ses_s3_delivery_policy 
@@ -111,8 +113,9 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   }
 
   lambda_action {
-    function_arn = "arn:aws:lambda:us-east-1:535462128585:function:vm-hosting-ses-forwarder-lambda" // <-- మీ ARN ఇక్కడ ఉంది
-    position     = 2
+    # Reference the resource directly instead of hardcoding the ARN for better practice
+    function_arn    = aws_lambda_function.ses_forwarder_lambda.arn 
+    position        = 2
     invocation_type = "Event"
   }
 }

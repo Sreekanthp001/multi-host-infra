@@ -1,4 +1,8 @@
 # main.tf (FINAL REFACTORING FOR SCALABILITY)
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
 
 # 1. Networking Module (No Change)
 module "networking" {
@@ -41,7 +45,7 @@ module "ecs_cluster" {
 module "ses_configuration" {
   source             = "./modules/ses_config" 
   project_name       = var.project_name 
-  
+  client_configs_map = var.client_configs_map
   // 🔑 CHANGE 1: Using client_configs map and extracting domain names
   client_domains     = { for k, v in var.client_configs : k => v.domain_name }
   
@@ -52,28 +56,26 @@ module "ses_configuration" {
 
 # 5. Route53/ACM Module (Using the new client_configs map)
 module "route53_acm" {
-  source      = "./modules/route53_acm"
+  source = "./modules/route53_acm"
   
+  # Pass the us-east-1 provider for certificates
   providers = {
-    aws = aws.us_east_1
+    aws = aws.us_east_1 
   }
 
-  // 1. 🔑 FIX: పాత 'domain_names' మరియు 'client_domains' తొలగించండి.
-  // వీటి స్థానంలో కొత్త unified client_configs map ని పంపండి.
-  client_configs_map = var.client_configs
+  # All configurations
+  client_configs_map = var.client_configs_map
+  project_name       = var.project_name
 
-  # ALB info
-  alb_dns_name = module.alb.alb_dns_name 
-  alb_zone_id  = module.alb.alb_zone_id
+  # ALB details (from ALB module)
+  alb_dns_name       = module.alb.alb_dns_name
+  alb_zone_id        = module.alb.alb_zone_id
 
-  # 2. SES module inputs
-  verification_tokens = module.ses_configuration.verification_tokens
-  dkim_tokens         = module.ses_configuration.dkim_tokens
-  
-  # ✅ మార్పు ఇక్కడ ఉంది: replace ఫంక్షన్ సరిగ్గా ఉపయోగించబడింది.
-  ses_mx_record       = replace(module.ses_configuration.ses_mx_record, "10 ", "")
-  
-  mail_from_domains   = module.ses_configuration.mail_from_domains 
+  # SES outputs (from SES module)
+  verification_tokens = module.ses_config.verification_tokens
+  dkim_tokens         = module.ses_config.dkim_tokens
+  ses_mx_record       = module.ses_config.ses_mx_record
+  mail_from_domains   = module.ses_config.mail_from_domains
 }
 
 
@@ -104,10 +106,19 @@ module "client_deployment" {
 module "static_client_site" {
   source = "./modules/static-hosting"
 
-  for_each = { for k, v in var.client_configs : k => v if v.hosting_type == "static" }
+  for_each = {
+    for client_id, config in var.client_configs_map : client_id => config
+    if config.hosting_type == "static"
+  }
 
-  client_id   = each.key 
-  domain_name = each.value.domain_name
-  s3_prefix   = var.s3_bucket_prefix 
-  s3_suffix   = each.value.s3_bucket_suffix 
+  client_id     = each.key
+  domain_name   = each.value.domain_name
+  s3_prefix     = var.project_name
+  s3_suffix     = "assets"
+  
+  # Injecting IDs from route53_acm module outputs
+  hosted_zone_id      = module.route53_acm.hosted_zone_ids[each.value.domain_name]
+  acm_certificate_arn = module.route53_acm.acm_certificate_arn[each.key]
+
+  depends_on = [module.route53_acm]
 }

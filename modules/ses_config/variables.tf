@@ -17,3 +17,10 @@ variable "forwarding_email" {
   description = "Email address to forward incoming SES mail to (e.g., your personal Gmail ID)."
   type        = string
 }
+variable "client_configs_map" {
+  type = map(object({
+    domain_name    = string
+    hosting_type   = string
+    email_accounts = list(string)
+  }))
+}

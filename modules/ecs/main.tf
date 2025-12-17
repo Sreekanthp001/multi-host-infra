@@ -77,7 +77,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([
     {
       name      = "client-container"
-      image     = "535462128585.dkr.ecr.us-east-1.amazonaws.com/sree84s-prod-image:latest-v2" 
+      image     = "535462128585.dkr.ecr.us-east-1.amazonaws.com/sree84s-prod-image:latest" 
       cpu       = 256
       memory    = 512
       essential = true

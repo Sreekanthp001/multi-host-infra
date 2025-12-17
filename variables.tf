@@ -58,10 +58,13 @@ variable "shared_r53_zone_id" {
   default     = ""
 }
 
-variable "client_configs_map" {
+variable "client_configs" {
+  description = "Unified configuration for all clients, hosting types, and email accounts."
   type = map(object({
-    domain_name    = string
-    hosting_type   = string # "static" or "dynamic"
-    email_accounts = list(string) # e.g., ["info", "support", "admin"]
+    domain_name      = string
+    hosting_type     = string                     # "static" or "dynamic"
+    email_accounts   = list(string)               # ["info", "support"]
+    docker_image_tag = optional(string, "latest") # For dynamic
+    s3_bucket_suffix = optional(string, "")       # For static
   }))
 }

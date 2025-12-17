@@ -41,7 +41,7 @@ module "ecs_cluster" {
 module "ses_configuration" {
   source             = "./modules/ses_config" 
   project_name       = var.project_name 
-  client_configs_map = var.client_configs_map
+  client_configs_map = var.client_configs
   // 🔑 CHANGE 1: Using client_configs map and extracting domain names
   client_domains     = { for k, v in var.client_configs : k => v.domain_name }
   
@@ -60,7 +60,7 @@ module "route53_acm" {
   }
 
   # All configurations
-  client_configs_map = var.client_configs_map
+  client_configs_map = var.client_configs
   project_name       = var.project_name
 
   # ALB details (from ALB module)
@@ -103,7 +103,7 @@ module "static_client_site" {
   source = "./modules/static-hosting"
 
   for_each = {
-    for client_id, config in var.client_configs_map : client_id => config
+    for client_id, config in var.client_configs : client_id => config
     if config.hosting_type == "static"
   }
 

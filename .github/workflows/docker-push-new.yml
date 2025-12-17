@@ -1,38 +1,38 @@
-name: 'Build and Push Frontend Image to ECR - V2'
+name: 'Build and Push Frontend Image to ECR'
 
+# Pipeline triggers under these conditions
 on:
   push:
     branches:
       - main
     paths:
-      - 'src/frontend/**' # <--- 1. మార్పు: మీ ప్రస్తుత ప్రాజెక్ట్ స్ట్రక్చర్‌కు సరిపోయేలా మార్చబడింది
+      - 'src_frontend/**' # Triggers only when changes are pushed to the src_frontend folder
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: frontend-app
+  ECR_REPOSITORY: sree84s-prod-image # Your ECR repository name
   IMAGE_TAG: latest
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  
+# Note: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set in GitHub Secrets.
 
 jobs:
   build-and-push:
-    name: 'Build & Push Docker Image and Deploy'
+    name: 'Build & Push Docker Image'
     runs-on: ubuntu-latest
-    environment: production
-
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # (Credentials and ECR Login స్టెప్స్ మార్పులేదు)
-      - name: Configure AWS Credentials (OIDC Method)
+      - name: Configure AWS Credentials (IAM User Keys)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
-          # ఇప్పుడు ఇక్కడ env: వేరియబుల్స్ ను వాడుకుందాం
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          output-env-credentials: true
+          # Retrieves credentials from GitHub Secrets
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # output-env-credentials: true # Not required for this use case
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -43,16 +43,17 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
         run: |
-          echo "Building image in src/frontend/"
-          # 2. మార్పు: Build Context మరియు Dockerfile path ను src/frontend కు మార్చబడింది
-          docker buildx build -t $IMAGE_URI -f src/frontend/Dockerfile src/frontend --push
-
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init and Apply (Update ECS Service)
-        run: |
+          echo "Building and Pushing Image: $IMAGE_URI"
           
-          terraform init 
-          terraform apply -auto-approve
+          # Adjust docker build command based on your project structure
+          # Dockerfile path: src_frontend/Dockerfile
+          # Build context: src_frontend/
+          docker build -t $IMAGE_URI -f src_frontend/Dockerfile src_frontend/ --push
+
+      - name: Verification
+        run: |
+          echo "Successfully pushed Image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} to ECR."
+          echo "Your manual deployment steps can now proceed."
+
+      # --- Removed Steps ---
+      # Terraform Init and Apply steps have been removed as requested for manual deployment.

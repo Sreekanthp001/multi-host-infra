@@ -33,21 +33,9 @@ resource "aws_iam_policy" "ses_send_policy" {
   })
 }
 
-resource "aws_iam_user" "smtp_user" {
-  name = "ses-smtp-user"
-  tags = {
-    Purpose = "SES_SMTP_Access"
-  }
-}
-
 resource "aws_iam_user_policy_attachment" "ses_smtp_attachment" {
   user       = aws_iam_user.smtp_user.name
   policy_arn = aws_iam_policy.ses_send_policy.arn
-}
-
-resource "aws_iam_access_key" "smtp_access_key" {
-  user   = aws_iam_user.smtp_user.name
-  status = "Active"
 }
 
 resource "aws_s3_bucket" "ses_inbound_bucket" {
@@ -148,24 +136,6 @@ resource "aws_ses_identity_notification_topic" "client_complaint_topic" {
   identity          = each.value.domain
   notification_type = "Complaint"
   topic_arn         = aws_sns_topic.ses_complaint_topic.arn
-}
-
-
-
-resource "aws_secretsmanager_secret" "ses_smtp_credentials" {
-  name        = "ses/smtp-credentials"
-  description = "SES SMTP credentials for transactional email sending"
-}
-
-resource "aws_secretsmanager_secret_version" "ses_smtp_credentials_version" {
-  secret_id = aws_secretsmanager_secret.ses_smtp_credentials.id
-  
-  secret_string = jsonencode({
-    SES_SMTP_USERNAME = aws_iam_access_key.smtp_access_key.id
-    SES_SMTP_PASSWORD = aws_iam_access_key.smtp_access_key.secret
-    SES_SMTP_HOST     = "email-smtp.${data.aws_region.current.name}.amazonaws.com"
-    SES_SMTP_PORT     = "587"
-  })
 }
 
 output "secretsmanager_arn" {

@@ -1,8 +1,4 @@
 # main.tf (FINAL REFACTORING FOR SCALABILITY)
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
-}
 
 # 1. Networking Module (No Change)
 module "networking" {

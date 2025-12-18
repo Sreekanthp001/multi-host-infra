@@ -13,5 +13,5 @@ output "dkim_tokens" {
 }
 
 output "ses_mx_record" {
-  value = "10 feedback-smtp.us-east-1.amazonaws.com" # Or your dynamic logic
+  value = "10 inbound-smtp.us-east-1.amazonaws.com." # Or your dynamic logic
 }

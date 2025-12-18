@@ -172,22 +172,6 @@ resource "aws_ses_identity_notification_topic" "client_complaint_topic" {
   topic_arn         = aws_sns_topic.ses_complaint_topic.arn
 }
 
-output "secretsmanager_arn" {
-  description = "ARN of the Secrets Manager containing the SES SMTP credentials"
-  value       = aws_secretsmanager_secret.ses_smtp_credentials.arn
-}
-output "smtp_username" {
-  description = "The Access Key ID for SES SMTP (Username)"
-  value       = aws_iam_access_key.smtp_access_key.id
-  sensitive   = true 
-}
-
-output "smtp_password" {
-  description = "The Secret Access Key for SES SMTP (Password)"
-  value       = aws_iam_access_key.smtp_access_key.secret
-  sensitive   = true 
-}
-
 output "mail_from_domains" {
   description = "The Mail From domains configured for SES"
   value       = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }

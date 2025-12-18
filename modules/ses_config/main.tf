@@ -33,10 +33,6 @@ resource "aws_iam_policy" "ses_send_policy" {
   })
 }
 
-resource "aws_iam_user_policy_attachment" "ses_smtp_attachment" {
-  user       = aws_iam_user.smtp_user.name
-  policy_arn = aws_iam_policy.ses_send_policy.arn
-}
 
 resource "aws_s3_bucket" "ses_inbound_bucket" {
   bucket = "sree84s-ses-inbound-mail-storage-0102"

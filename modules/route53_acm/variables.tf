@@ -41,7 +41,8 @@ variable "dkim_tokens" {
 # Meeru 'string' ani icharu, kaani ses_config module nundi map vasthe idi 'map(string)' ga undali
 variable "ses_mx_record" {
   description = "MX record value pointing to the regional SES endpoint"
-  type        = string  # Map badulu string ani pettandi
+  type        = string
+  default     = "10 inbound-smtp.us-east-1.amazonaws.com." 
 }
 
 variable "mail_from_domains" {

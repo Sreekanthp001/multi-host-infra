@@ -15,3 +15,14 @@ output "dkim_tokens" {
 output "ses_mx_record" {
   value = "10 inbound-smtp.us-east-1.amazonaws.com." # Or your dynamic logic
 }
+
+output "client_smtp_secrets" {
+  description = "Individual SMTP credentials for each client"
+  value = {
+    for k, v in aws_iam_access_key.smtp_key : k => {
+      smtp_username = v.id
+      smtp_password = v.ses_smtp_password_v4
+    }
+  }
+  sensitive = true # Passwords kabatti hide chesthundhi
+}

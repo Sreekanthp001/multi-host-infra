@@ -99,7 +99,7 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
     "support@${each.value.domain_name}",
     "sales@${each.value.domain_name}"
   ]
-  
+
   depends_on = [
     aws_s3_bucket_policy.ses_s3_delivery_policy 
   ]
@@ -139,6 +139,36 @@ resource "aws_ses_identity_notification_topic" "client_bounce_topic" {
   topic_arn         = aws_sns_topic.ses_bounce_topic.arn
 }
 
+# 1. Prathi client ki oka unique IAM User ni create chesthundhi
+resource "aws_iam_user" "smtp_user" {
+  for_each = var.client_configs_map
+  name     = "${each.key}-smtp-user" # e.g., calvio-store-smtp-user
+}
+
+# 2. Aa user ki SES dwara mails pampadaniki permission isthundhi
+resource "aws_iam_user_policy" "smtp_policy" {
+  for_each = var.client_configs_map
+  name     = "AmazonSesSendingPolicy"
+  user     = aws_iam_user.smtp_user[each.key].name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "ses:SendRawEmail"
+        Effect   = "Allow"
+        Resource = "*" # Production lo unnav kabatti restrict cheyochu, but generic ga idi work avthundi
+      }
+    ]
+  })
+}
+
+# 3. Ikkada Access Key and SMTP Password generate avthundhi
+resource "aws_iam_access_key" "smtp_key" {
+  for_each = var.client_configs_map
+  user     = aws_iam_user.smtp_user[each.key].name
+}
+
 resource "aws_ses_identity_notification_topic" "client_complaint_topic" {
   for_each          = aws_ses_domain_identity.client_ses_identity
   identity          = each.value.domain
@@ -166,3 +196,4 @@ output "mail_from_domains" {
   description = "The Mail From domains configured for SES"
   value       = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }
 }
+

@@ -57,12 +57,18 @@ resource "aws_s3_bucket_policy" "ses_s3_delivery_policy" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid       = "AllowSESPuts"
         Effect    = "Allow"
         Principal = {
           Service = "ses.amazonaws.com"
         }
         Action   = "s3:PutObject" 
-        Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*", 
+        Resource = "${aws_s3_bucket.ses_inbound_bucket.arn}/*",
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
       },
     ]
   })
@@ -81,15 +87,14 @@ resource "aws_ses_receipt_rule_set" "main_rule_set" {
 }
 
 resource "aws_ses_receipt_rule" "forwarding_rule" {
-  for_each      = var.client_configs_map # Using the full map to access email_accounts list
+  for_each      = var.client_configs_map
   name          = "${each.key}-forwarding-rule"
   rule_set_name = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
   enabled       = true
   scan_enabled  = true
 
-  # This logic dynamically creates the list of recipients:
-  # If email_accounts = ["info", "support"], it creates ["info@domain.com", "support@domain.com"]
-  recipients = [for account in each.value.email_accounts : "${account}@${each.value.domain_name}"]
+  # Domain level catch-all: idi pedithe prathi mail catch avthundi
+  recipients = [each.value.domain_name] 
 
   depends_on = [
     aws_s3_bucket_policy.ses_s3_delivery_policy 
@@ -101,7 +106,6 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   }
 
   lambda_action {
-    # Reference the resource directly instead of hardcoding the ARN for better practice
     function_arn    = aws_lambda_function.ses_forwarder_lambda.arn 
     position        = 2
     invocation_type = "Event"
@@ -111,9 +115,9 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
 resource "aws_lambda_permission" "allow_ses_to_trigger_forwarder" {
   statement_id  = "AllowSESInvocation"
   action        = "lambda:InvokeFunction"
-  function_name = "vm-hosting-ses-forwarder-lambda" 
+  function_name = aws_lambda_function.ses_forwarder_lambda.function_name # Direct reference
   principal     = "ses.amazonaws.com"
-  //source_arn    = aws_ses_receipt_rule_set.multi_client_rules.arn
+  source_arn    = "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:receipt-rule-set/${aws_ses_receipt_rule_set.main_rule_set.rule_set_name}:*"
 }
 
 resource "aws_sns_topic" "ses_bounce_topic" {

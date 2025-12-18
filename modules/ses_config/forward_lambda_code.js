@@ -36,13 +36,15 @@ exports.handler = async (event, context) => {
         
         console.log(`SUCCESS Email forwarded successfully to ${FORWARD_TO}`);
 
-        // Delete the email from S3 (optional, but good practice)
+        // --- S3 Deletion logic comment chesa mawa ---
+        /*
         await S3.deleteObject({
             Bucket: s3Bucket,
             Key: s3Key
         }).promise();
         
         console.log(`INFO S3 object ${s3Key} deleted.`);
+        */
 
         return { statusCode: 200, body: `Email forwarded to ${FORWARD_TO}` };
 

@@ -14,7 +14,7 @@ resource "aws_ses_domain_dkim" "client_ses_dkim" {
 resource "aws_ses_domain_mail_from" "client_mail_from" {
   for_each         = var.client_configs_map
   domain           = aws_ses_domain_identity.client_ses_identity[each.key].domain 
-  mail_from_domain = "mail.${each.value}" 
+  mail_from_domain = "mail.${each.value.domain_name}"
 }
 
 resource "aws_iam_policy" "ses_send_policy" {

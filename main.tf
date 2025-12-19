@@ -39,7 +39,8 @@ module "ecs_cluster" {
 
 # 4. SES Configuration Module (Using the new client_configs map)
 module "ses_config" {
-  source             = "./modules/ses_config" 
+  source             = "./modules/ses_config"
+  all_client_domains = [for c in var.client_configs : c.domain_name] 
   project_name       = var.project_name 
   client_configs_map = var.client_configs
   // 🔑 CHANGE 1: Using client_configs map and extracting domain names

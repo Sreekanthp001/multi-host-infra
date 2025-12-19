@@ -23,6 +23,11 @@ variable "project_name" {
    The key is the unique client ID (e.g., "sree84s-prod").
    The value is an object containing configuration details.
 */
+variable "all_client_domains" {
+  type        = list(string)
+  description = "List of all domain names for catch-all forwarding"
+}
+
 variable "client_configs" {
   description = "A map of client configurations for dynamic and static hosting."
   type = map(object({

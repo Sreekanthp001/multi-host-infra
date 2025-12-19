@@ -90,7 +90,7 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   scan_enabled  = true
 
   # Domain level catch-all: idi pedithe prathi mail catch avthundi
-  recipients    = var.client_configs
+  recipients    = [each.value.domain_name]
 
   depends_on = [
     aws_s3_bucket_policy.ses_s3_delivery_policy 

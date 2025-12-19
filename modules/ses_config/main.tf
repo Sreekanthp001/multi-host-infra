@@ -7,12 +7,12 @@ resource "aws_ses_domain_identity" "client_ses_identity" {
 }
 
 resource "aws_ses_domain_dkim" "client_ses_dkim" {
-  for_each = var.client_domains
+  for_each = var.client_configs_map
   domain   = aws_ses_domain_identity.client_ses_identity[each.key].domain
 }
 
 resource "aws_ses_domain_mail_from" "client_mail_from" {
-  for_each         = var.client_domains
+  for_each         = var.client_configs_map
   domain           = aws_ses_domain_identity.client_ses_identity[each.key].domain 
   mail_from_domain = "mail.${each.value}" 
 }

@@ -2,8 +2,8 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 resource "aws_ses_domain_identity" "client_ses_identity" {
-  for_each = var.client_domains
-  domain   = each.value
+  for_each = var.client_configs_map
+  domain   = each.value.domain_name
 }
 
 resource "aws_ses_domain_dkim" "client_ses_dkim" {

@@ -9,6 +9,7 @@ resource "aws_route53_record" "mail_server_a_record" {
 }
 
 # 2. MX Records for Client Domains
+resource "aws_route53_record" "client_mx" {
   for_each = local.all_domains
   zone_id  = local.zone_ids[each.value.domain]
   name     = each.value.domain
@@ -17,6 +18,7 @@ resource "aws_route53_record" "mail_server_a_record" {
   records  = ["10 mx.webhizzy.in."]
 }
 
+# 3. SPF Records for Client Domains
 resource "aws_route53_record" "client_spf" {
   for_each = local.all_domains
   zone_id  = local.zone_ids[each.value.domain]
@@ -26,6 +28,7 @@ resource "aws_route53_record" "client_spf" {
   records  = ["v=spf1 mx ip4:${var.mail_server_ip} -all"]
 }
 
+# 4. DMARC Records for Client Domains
 resource "aws_route53_record" "client_dmarc" {
   for_each = local.all_domains
   zone_id  = local.zone_ids[each.value.domain]

@@ -1,66 +1,36 @@
+# modules/ses_config/bounce_handler.tf
+
+# 1. IAM Role for Bounce Handler Lambda
 resource "aws_iam_role" "ses_bounce_lambda_role" {
-  name = "SES-Bounce-Handler-Role"
+  name = "${var.project_name}-ses-bounce-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      },
-    ]
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
   })
 }
 
-resource "aws_iam_policy" "ses_bounce_lambda_policy" {
-  name = "SES-Bounce-Handler-Policy"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-        ]
-        Effect = "Allow"
-        Resource = "arn:aws:logs:*:*:*"
-      },
-      {
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:GetItem",
-          "dynamodb:Scan",
-          "dynamodb:Query",
-        ]
-        Effect = "Allow"
-        Resource = "arn:aws:dynamodb:*:*:table/*" // భవిష్యత్ Suppression List టేబుల్ కోసం
-      },
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ses_bounce_policy_attach" {
+# 2. Basic Logging Policy
+resource "aws_iam_role_policy_attachment" "bounce_log_attach" {
   role       = aws_iam_role.ses_bounce_lambda_role.name
-  policy_arn = aws_iam_policy.ses_bounce_lambda_policy.arn
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# 3. Bounce Handler Lambda Function
 resource "aws_lambda_function" "ses_bounce_handler" {
-  filename         = "bounce_handler_lambda.zip"
-  function_name    = "ses-bounce-complaint-handler"
+  filename         = data.archive_file.bounce_zip.output_path
+  function_name    = "${var.project_name}-ses-bounce-complaint-handler"
   role             = aws_iam_role.ses_bounce_lambda_role.arn
-  handler          = "index.handler"
+  handler          = "bounce_handler_lambda.handler"
   runtime          = "nodejs20.x"
-  timeout          = 30
-  source_code_hash = filebase64sha256("bounce_handler_lambda.js")
+  source_code_hash = data.archive_file.bounce_zip.output_base64sha256
 }
 
+# 4. Permissions for SNS to trigger Lambda
 resource "aws_lambda_permission" "allow_sns_bounce" {
   statement_id  = "AllowExecutionFromSNSBounce"
   action        = "lambda:InvokeFunction"
@@ -77,6 +47,7 @@ resource "aws_lambda_permission" "allow_sns_complaint" {
   source_arn    = aws_sns_topic.ses_complaint_topic.arn
 }
 
+# 5. SNS Subscriptions
 resource "aws_sns_topic_subscription" "bounce_subscription" {
   topic_arn = aws_sns_topic.ses_bounce_topic.arn
   protocol  = "lambda"

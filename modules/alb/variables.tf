@@ -1,24 +1,26 @@
 # modules/alb/variables.tf
 
 variable "project_name" {
-  type = string
+  description = "The prefix used for naming resources"
+  type        = string
 }
 
 variable "vpc_id" {
-  type = string
+  description = "The VPC ID where the ALB will be deployed"
+  type        = string
 }
 
 variable "public_subnet_ids" {
-  type = list(string)
+  description = "List of public subnet IDs for the ALB"
+  type        = list(string)
 }
 
 variable "acm_certificate_arn" {
-  type = string
-  description = "The ARN of the ACM certificate to use for the HTTPS listener."
+  description = "The ARN of the primary ACM certificate"
+  type        = string
 }
 
-# 🛑 కొత్త వేరియబుల్: ACM ధృవీకరణ రిసోర్స్ ను పాస్ చేయడానికి
 variable "acm_validation_resource" {
-  type        = any # ఇది aws_acm_certificate_validation రిసోర్స్ ఆబ్జెక్ట్ ను తీసుకుంటుంది
-  description = "The ACM validation resource used to enforce dependency."
+  description = "The validation object from the ACM module to enforce build order"
+  type        = any 
 }

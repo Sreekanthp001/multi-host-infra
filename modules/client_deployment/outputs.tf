@@ -1,16 +1,16 @@
 # modules/client_deployment/outputs.tf
 
-# output "target_group_arn" {
-#  description = "The ARN of the ECS Target Group for the client service."
-#  value       = aws_lb_target_group.client_tg["sree84s-prod"].arn
-# }
-
-output "listener_rule_arn" {
-  description = "The ARN of the ALB Listener Rule created for this client's domain."
-  value = aws_lb_listener_rule.host_rule["sree84s-prod"].arn
+output "client_target_group_arns" {
+  description = "Map of all client target group ARNs"
+  value       = { for k, v in aws_lb_target_group.client_tg : k => v.arn }
 }
 
-output "ecs_service_name" {
-  description = "The name of the ECS service deployed for this client."
-  value = aws_ecs_service.client_service["sree84s-prod"].name
+output "client_service_names" {
+  description = "Map of all deployed ECS service names"
+  value       = { for k, v in aws_ecs_service.client_service : k => v.name }
+}
+
+output "listener_rule_ids" {
+  description = "Map of all listener rule IDs"
+  value       = { for k, v in aws_lb_listener_rule.host_rule : k => v.id }
 }

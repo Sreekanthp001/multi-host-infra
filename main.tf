@@ -56,21 +56,22 @@ module "ecs" {
   ecr_repository_url = module.ecr.repository_url
 }
 
-# 7. Client Deployment Module (Fargate Services)
+# 7. Client Deployment Module (Dynamic - sree84s.site)
 module "client_deployment" {
   source              = "./modules/client_deployment"
-  for_each            = var.client_domains # Creating a service per client
-  project_name        = var.project_name
-  client_key          = each.key
-  vpc_id              = module.networking.vpc_id
-  private_subnet_ids  = module.networking.private_subnet_ids
-  ecs_cluster_id      = module.ecs.ecs_cluster_id
-  task_definition_arn = module.ecs.task_definition_arn
-  ecs_tasks_sg_id     = module.ecs.ecs_tasks_sg_id
-  target_group_arn    = module.alb.target_group_arn
+  for_each            = var.client_domains
+  
+  client_name                   = each.key
+  client_domains                = { (each.key) = each.value }
+  vpc_id                        = module.networking.vpc_id
+  private_subnets               = module.networking.private_subnet_ids
+  ecs_cluster_id                = module.ecs.ecs_cluster_id
+  task_definition_arn           = module.ecs.task_definition_arn
+  ecs_service_security_group_id = module.ecs.ecs_tasks_sg_id
+  alb_https_listener_arn        = module.alb.alb_https_listener_arn
 }
 
-# 8. Static Hosting Module (S3 + CloudFront)
+# 8. Static Hosting Module (Static - clavio.store)
 module "static_hosting" {
   source                = "./modules/static_hosting"
   project_name          = var.project_name

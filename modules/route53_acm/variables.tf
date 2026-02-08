@@ -6,8 +6,8 @@ variable "domain_names" {
 }
 
 variable "client_domains" {
-  description = "Map of client keys to root domain names"
-  type        = map(string)
+  type        = map(any) # string nundi any ki marchu
+  description = "Dynamic app domains"
 }
 
 variable "alb_dns_name" {

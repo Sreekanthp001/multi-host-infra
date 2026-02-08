@@ -6,8 +6,8 @@ variable "project_name" {
 }
 
 variable "client_domains" {
-  description = "Map of client keys to domain names"
-  type        = map(string)
+  type        = map(any) # string nundi any ki marchu
+  description = "Dynamic app domains"
 }
 
 variable "aws_region" {

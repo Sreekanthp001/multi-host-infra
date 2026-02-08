@@ -1,5 +1,14 @@
 # modules/ecs/main.tf
 
+# Random ID for unique security group naming
+resource "random_id" "sg_suffix" {
+  byte_length = 4
+  
+  keepers = {
+    vpc_id = var.vpc_id
+  }
+}
+
 # 1. ECS Cluster with Monitoring enabled
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
@@ -38,10 +47,33 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# Grant access to Secrets Manager
+resource "aws_iam_role_policy" "ecs_secrets_access" {
+  count = length(var.secret_arns) > 0 ? 1 : 0
+  
+  name = "ecs-secrets-access"
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "kms:Decrypt"
+        ]
+        Resource = values(var.secret_arns)
+      }
+    ]
+  })
+}
+
 # 3. Security Group for ECS Tasks
 # Restricts traffic so that only the ALB can communicate with the containers.
+# Using random_id suffix to prevent duplicate security group errors
 resource "aws_security_group" "ecs_tasks_sg" {
-  name        = "${var.project_name}-ecs-task-sg"
+  name        = "${var.project_name}-ecs-task-sg-${random_id.sg_suffix.hex}"
   description = "Allows inbound traffic only from the ALB security group"
   vpc_id      = var.vpc_id
 

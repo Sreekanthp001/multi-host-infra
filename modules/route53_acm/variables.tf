@@ -39,3 +39,22 @@ variable "mail_from_domains" {
   description = "Sub-domains for SES MAIL FROM configuration"
   type        = map(string)
 }
+
+# NEW: Variables for Static Domain Support
+variable "static_client_configs" {
+  description = "Map of static site configurations (S3 + CloudFront)"
+  type        = map(any)
+  default     = {}
+}
+
+variable "cloudfront_domain_names" {
+  description = "CloudFront distribution domain names for static sites"
+  type        = map(string)
+  default     = {}
+}
+
+variable "cloudfront_hosted_zone_ids" {
+  description = "CloudFront hosted zone IDs for Route53 alias records"
+  type        = map(string)
+  default     = {}
+}

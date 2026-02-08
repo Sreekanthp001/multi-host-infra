@@ -21,6 +21,12 @@ variable "aws_region" {
 }
 
 variable "ecr_repository_url" {
-  description = "The full URI of the ECR repository"
+  description = "URL of the ECR repository"
   type        = string
+}
+
+variable "secret_arns" {
+  description = "Map of secret ARNs for client applications"
+  type        = map(string)
+  default     = {}
 }

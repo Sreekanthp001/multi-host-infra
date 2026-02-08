@@ -14,3 +14,8 @@ output "s3_bucket_names" {
   description = "The names of the S3 buckets used for static hosting"
   value       = { for k, v in aws_s3_bucket.static_bucket : k => v.id }
 }
+
+output "cloudfront_distribution_ids" {
+  description = "The IDs of CloudFront distributions"
+  value       = { for k, v in aws_cloudfront_distribution.s3_dist : k => v.id }
+}

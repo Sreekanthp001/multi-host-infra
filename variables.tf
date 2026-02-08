@@ -21,5 +21,11 @@ variable "static_client_configs" {
 }
 
 variable "forwarding_email" {
-  type = string
+  description = "The email address where SES will forward incoming emails"
+  type        = string
+}
+
+variable "alert_email" {
+  description = "The email address for CloudWatch alarm notifications"
+  type        = string
 }

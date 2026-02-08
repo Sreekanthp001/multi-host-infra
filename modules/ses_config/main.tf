@@ -60,6 +60,15 @@ resource "aws_ses_receipt_rule_set" "main_rule_set" {
   rule_set_name = "${var.project_name}-rule-set"
 }
 
+# Lambda Permission for SES to invoke the bounce handler
+resource "aws_lambda_permission" "allow_ses_invoke" {
+  statement_id  = "AllowExecutionFromSES"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ses_bounce_handler.function_name
+  principal     = "ses.amazonaws.com"
+  source_account = data.aws_caller_identity.current.account_id
+}
+
 resource "aws_ses_receipt_rule" "forwarding_rule" {
   for_each      = var.client_domains
   name          = "${each.key}-forward-rule"
@@ -78,5 +87,8 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
     invocation_type = "Event"
   }
 
-  depends_on = [aws_s3_bucket_policy.ses_s3_delivery_policy]
+  depends_on = [
+    aws_s3_bucket_policy.ses_s3_delivery_policy,
+    aws_lambda_permission.allow_ses_invoke
+  ]
 }

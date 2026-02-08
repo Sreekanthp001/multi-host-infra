@@ -1,11 +1,36 @@
 data "aws_region" "current" {}
 
 locals {
+  # UNIFIED DOMAIN MAP: Merges Dynamic (ECS) and Static (CloudFront) domains
+  # This enables scaling to 100+ domains with zero manual intervention
+  all_domains = merge(
+    # Dynamic domains (ECS + ALB)
+    {
+      for k, v in var.client_domains : k => {
+        domain = v.domain
+        type   = "dynamic"  # Routes to ALB
+        priority = lookup(v, "priority", null)
+      }
+    },
+    # Static domains (S3 + CloudFront)
+    {
+      for k, v in var.static_client_configs : k => {
+        domain = v.domain_name
+        type   = "static"  # Routes to CloudFront
+        priority = null
+      }
+    }
+  )
+
+  # Extract just the domain names for ACM certificate SANs
+  all_domain_names = [for k, v in local.all_domains : v.domain]
+
   # Mapping domain names to their respective Route 53 Hosted Zone IDs
+  # This works for both dynamic and static domains
   zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
 
   # SCALING FIX: Creating a flat list of domain index and token index (0, 1, 2)
-  # Idi static ga untundi kabatti Terraform plan lo error ivvadu
+  # Only for dynamic domains that need SES configuration
   dkim_flat = flatten([
     for client_key, domain_val in var.client_domains : [
       for i in range(3) : {
@@ -21,26 +46,31 @@ locals {
 }
 
 # 1. Multi-Domain Hosted Zone Creation
+# Creates Route53 hosted zones for ALL domains (dynamic + static)
 resource "aws_route53_zone" "client_hosted_zones" {
-  for_each = var.client_domains 
+  for_each = local.all_domains
 
   name    = each.value.domain
-  comment = "Managed by Terraform for Client: ${each.key}"
+  comment = "Managed by Terraform for Client: ${each.key} (${each.value.type})"
 }
 
 # 2. Multi-Domain SAN Certificate with Wildcards
+# Includes ALL domains (100+) in a single certificate
 resource "aws_acm_certificate" "client_cert" {
-  domain_name               = var.domain_names[0] 
+  domain_name               = local.all_domain_names[0]
   validation_method         = "DNS"
   subject_alternative_names = flatten([
-    for domain in var.domain_names : [domain, "*.${domain}"]
+    for domain in local.all_domain_names : [domain, "*.${domain}"]
   ])
 
   lifecycle {
     create_before_destroy = true
   }
 
-  tags = { Name = "MultiClient-Wildcard-SAN-Cert" }
+  tags = { 
+    Name = "MultiClient-Wildcard-SAN-Cert"
+    TotalDomains = length(local.all_domain_names)
+  }
 }
 
 # 3. DNS Validation Records
@@ -65,11 +95,14 @@ resource "aws_acm_certificate_validation" "cert_validation" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation_records : record.fqdn]
 }
 
-# 5. Route 53 A Records (Alias to ALB)
+# 5a. Route 53 A Records - DYNAMIC DOMAINS (Alias to ALB)
+# Automatically created for all domains with type = "dynamic"
 resource "aws_route53_record" "alb_alias" {
-  for_each = var.client_domains
+  for_each = {
+    for k, v in local.all_domains : k => v if v.type == "dynamic"
+  }
   
-  zone_id  = local.zone_ids[each.value.domain] 
+  zone_id  = local.zone_ids[each.value.domain]
   name     = each.value.domain
   type     = "A"
 
@@ -77,6 +110,24 @@ resource "aws_route53_record" "alb_alias" {
     name                   = var.alb_dns_name
     zone_id                = var.alb_zone_id
     evaluate_target_health = true
+  }
+}
+
+# 5b. Route 53 A Records - STATIC DOMAINS (Alias to CloudFront)
+# Automatically created for all domains with type = "static"
+resource "aws_route53_record" "cloudfront_alias" {
+  for_each = {
+    for k, v in local.all_domains : k => v if v.type == "static"
+  }
+  
+  zone_id  = local.zone_ids[each.value.domain]
+  name     = each.value.domain
+  type     = "A"
+
+  alias {
+    name                   = var.cloudfront_domain_names[each.key]
+    zone_id                = var.cloudfront_hosted_zone_ids[each.key]
+    evaluate_target_health = false
   }
 }
 

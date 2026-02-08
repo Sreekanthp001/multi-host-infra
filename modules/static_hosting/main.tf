@@ -16,6 +16,16 @@ resource "aws_cloudfront_origin_access_control" "default" {
   signing_protocol                  = "sigv4"
 }
 
+# 2a. Time Sleep to allow ACM certificate propagation
+# CloudFront needs time to detect the certificate after validation
+resource "time_sleep" "wait_for_acm_propagation" {
+  create_duration = "60s"
+  
+  triggers = {
+    acm_cert_arn = var.acm_certificate_arn
+  }
+}
+
 # 3. CloudFront Distribution
 resource "aws_cloudfront_distribution" "s3_dist" {
   for_each = var.static_client_configs
@@ -63,6 +73,8 @@ resource "aws_cloudfront_distribution" "s3_dist" {
     Name   = "${var.project_name}-${each.key}-cf"
     Client = each.key
   }
+  
+  depends_on = [time_sleep.wait_for_acm_propagation]
 }
 
 # 4. S3 Bucket Policy to allow CloudFront access

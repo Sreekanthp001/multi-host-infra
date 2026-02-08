@@ -18,3 +18,7 @@ output "ses_mx_record" {
 output "mail_from_domains" {
   value = { for k, v in aws_ses_domain_mail_from.client_mail_from : k => v.mail_from_domain }
 }
+
+output "lambda_function_name" {
+  value = aws_lambda_function.ses_bounce_handler.function_name
+}

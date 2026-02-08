@@ -9,13 +9,13 @@ terraform {
     }
   }
 
-  # Remote State Management
-  backend "s3" {
-    bucket  = "sree84s-tf-remote-state-111" # Ensure this bucket exists in the new account
-    key     = "multi-host-infra/terraform.tfstate"
-    region  = "us-east-1"
-    encrypt = true
-  }
+  # # Remote State Management
+  # backend "s3" {
+  #   bucket  = "sree84s-tf-remote-state-111" # Ensure this bucket exists in the new account
+  #   key     = "multi-host-infra/terraform.tfstate"
+  #   region  = "us-east-1"
+  #   encrypt = true
+  # }
 }
 
 provider "aws" {

@@ -104,7 +104,7 @@ resource "aws_route53_record" "client_mx_record" {
 }
 
 # SCALING FIX: Using for_each for DKIM instead of count
-resource "aws_route53_record" "ses_dkim_records" {
+/* resource "aws_route53_record" "ses_dkim_records" {
   for_each = local.dkim_records_map
   
   zone_id = local.zone_ids[each.value.domain_name]
@@ -112,7 +112,7 @@ resource "aws_route53_record" "ses_dkim_records" {
   type    = "CNAME"
   ttl     = 600
   records = ["${each.value.token_value}.dkim.amazonses.com"]
-}
+} */
 
 resource "aws_route53_record" "client_spf_record" {
   for_each = var.client_domains

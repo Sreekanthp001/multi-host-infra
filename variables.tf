@@ -10,9 +10,14 @@ variable "vpc_cidr" {
   type = string
 }
 
-variable "client_domains" {
-  type        = map(any) # Changed to 'any' to support domain + priority objects
-  description = "Dynamic app domains with priority"
+variable "clients" {
+  description = "Map of dynamic clients hosted on ECS"
+  type = map(object({
+    domain_name    = string
+    github_repo    = string
+    container_port = number
+    priority       = optional(number)
+  }))
 }
 
 variable "static_client_configs" {

@@ -1,3 +1,13 @@
+# Local Adapter for Backward Compatibility
+locals {
+  client_domains = {
+    for k, v in var.clients : k => {
+      domain   = v.domain_name
+      priority = v.priority
+    }
+  }
+}
+
 # 1. Networking Module
 module "networking" {
   source       = "./modules/networking"
@@ -15,7 +25,7 @@ module "ecr" {
 module "ses_config" {
   source           = "./modules/ses_config"
   project_name     = var.project_name
-  client_domains   = var.client_domains
+  client_domains   = local.client_domains
   aws_region       = var.aws_region
   forwarding_email = var.forwarding_email
 }
@@ -25,10 +35,10 @@ module "ses_config" {
 module "route53_acm" {
   source              = "./modules/route53_acm"
   domain_names        = concat(
-    [for k, v in var.client_domains : v.domain],
+    [for k, v in local.client_domains : v.domain],
     [for k, v in var.static_client_configs : v.domain_name]
   )
-  client_domains      = var.client_domains
+  client_domains      = local.client_domains
   static_client_configs = var.static_client_configs
   alb_dns_name        = module.alb.alb_dns_name
   alb_zone_id         = module.alb.alb_zone_id
@@ -66,7 +76,7 @@ module "ecs" {
 # 7. Client Deployment Module (Corrected References)
 module "client_deployment" {
   source   = "./modules/client_deployment"
-  for_each = var.client_domains
+  for_each = local.client_domains
 
   client_name    = each.key
   domain_name    = each.value.domain
@@ -94,7 +104,7 @@ module "monitoring" {
   source                  = "./modules/monitoring"
   project_name            = var.project_name
   alert_email             = var.alert_email
-  client_domains          = var.client_domains
+  client_domains          = local.client_domains
   static_client_configs   = var.static_client_configs
   
   # Module Outputs
@@ -109,7 +119,7 @@ module "monitoring" {
 module "secrets" {
   source         = "./modules/secrets"
   project_name   = var.project_name
-  client_domains = var.client_domains
+  client_domains = local.client_domains
 }
 
 # 11. WAF Module (Bonus: Security)

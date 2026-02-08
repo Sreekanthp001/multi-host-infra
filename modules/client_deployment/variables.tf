@@ -38,3 +38,8 @@ variable "project_name" {
   type    = string
   default = "vm-hosting"
 }
+
+variable "priority_index" {
+  type        = number
+  description = "Unique priority for ALB listener rule"
+}

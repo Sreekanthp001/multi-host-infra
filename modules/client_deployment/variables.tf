@@ -1,13 +1,10 @@
-# modules/client_deployment/variables.tf
-
 variable "client_name" {
   type        = string
-  description = "Name of the client (from each.key)"
 }
 
-variable "client_domains" {
-  type        = map(string)
-  description = "The domain mapping for this specific client"
+variable "domain_name" {
+  type        = string
+  description = "The main domain for this client (e.g., sree84s.site)"
 }
 
 variable "vpc_id" {
@@ -36,10 +33,8 @@ variable "alb_https_listener_arn" {
 
 variable "project_name" {
   type    = string
-  default = "vm-hosting"
 }
 
 variable "priority_index" {
   type        = number
-  description = "Unique priority for ALB listener rule"
 }

@@ -58,20 +58,20 @@ module "ecs" {
 
 # 7. Client Deployment Module (Dynamic - sree84s.site)
 module "client_deployment" {
-  source              = "./modules/client_deployment"
-  for_each            = var.client_domains
-  
-  project_name        = var.project_name     
+  source   = "./modules/client_deployment"
+  for_each = var.client_domains # tfvars lo unna map ni loop chestundi
+
   client_name         = each.key
-  client_domains  = each.value.domains
-  priority_index      = index(keys(var.client_domains), each.key)
+  domain_name         = each.value.domain   # tfvars nundi domain pick chestundi
+  priority_index      = each.value.priority # tfvars nundi priority pick chestundi
   
-  vpc_id                        = module.networking.vpc_id
-  private_subnets               = module.networking.private_subnet_ids
-  ecs_cluster_id                = module.ecs.ecs_cluster_id
-  task_definition_arn           = module.ecs.task_definition_arn
-  ecs_service_security_group_id = module.ecs.ecs_tasks_sg_id
-  alb_https_listener_arn        = module.alb.alb_https_listener_arn
+  project_name                  = var.project_name
+  vpc_id                        = module.vpc.vpc_id
+  private_subnets               = module.vpc.private_subnets
+  ecs_cluster_id                = aws_ecs_cluster.main.id
+  task_definition_arn           = aws_ecs_task_definition.app.arn
+  ecs_service_security_group_id = aws_security_group.ecs_tasks.id
+  alb_https_listener_arn        = module.alb.https_listener_arn
 }
 
 # 8. Static Hosting Module (Static - clavio.store)

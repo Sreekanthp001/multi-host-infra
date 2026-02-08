@@ -1,5 +1,3 @@
-# modules/client_deployment/main.tf
-
 resource "aws_lb_target_group" "client_tg" {
   name        = "${var.project_name}-${var.client_name}-tg"
   port        = 80 
@@ -15,17 +13,11 @@ resource "aws_lb_target_group" "client_tg" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
-
-  tags = {
-    Name = "${var.client_name}-target-group"
-  }
 }
 
 resource "aws_lb_listener_rule" "host_rule" {
   listener_arn = var.alb_https_listener_arn 
-  
-  # tfvars nundi priority auto ga teeskuntundi
-  priority     = var.priority_index 
+  priority     = var.priority_index
 
   action {
     type             = "forward"
@@ -34,7 +26,7 @@ resource "aws_lb_listener_rule" "host_rule" {
 
   condition {
     host_header {
-      # Ikkada domains ni list ga pampali
+      # Ikkada domain and wildcard (*.domain) auto ga add avthayi
       values = [var.domain_name, "*.${var.domain_name}"]
     }
   }
@@ -57,9 +49,5 @@ resource "aws_ecs_service" "client_service" {
     target_group_arn = aws_lb_target_group.client_tg.arn
     container_name   = "client-container" 
     container_port   = 80 
-  }
-
-  lifecycle {
-    ignore_changes = [desired_count] 
   }
 }

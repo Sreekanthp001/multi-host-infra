@@ -23,7 +23,9 @@ resource "aws_lb_target_group" "client_tg" {
 
 resource "aws_lb_listener_rule" "host_rule" {
   listener_arn = var.alb_https_listener_arn 
-  priority     = var.priority_index + 100
+  
+  # tfvars nundi priority auto ga teeskuntundi
+  priority     = var.priority_index 
 
   action {
     type             = "forward"
@@ -32,8 +34,8 @@ resource "aws_lb_listener_rule" "host_rule" {
 
   condition {
     host_header {
-      # ikkada hardcode cheyakunda module ki vache domains list ni vadutunnam
-      values = var.client_domains
+      # Ikkada domains ni list ga pampali
+      values = [var.domain_name, "*.${var.domain_name}"]
     }
   }
 }

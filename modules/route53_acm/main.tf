@@ -2,7 +2,6 @@ data "aws_region" "current" {}
 
 locals {
   # UNIFIED DOMAIN MAP: Merges Dynamic (ECS) and Static (CloudFront) domains
-  # This enables scaling to 100+ domains with zero manual intervention
   all_domains = merge(
     # Dynamic domains (ECS + ALB)
     {
@@ -10,6 +9,7 @@ locals {
         domain = v.domain
         type   = "dynamic"  # Routes to ALB
         priority = lookup(v, "priority", null)
+        parent_zone_name = lookup(v, "parent_zone_name", null) # Support sub-domains
       }
     },
     # Static domains (S3 + CloudFront)
@@ -18,16 +18,32 @@ locals {
         domain = v.domain_name
         type   = "static"  # Routes to CloudFront
         priority = null
+        parent_zone_name = lookup(v, "parent_zone_name", null) # Support sub-domains
       }
     }
   )
 
+  # Filter: Only create zones for domains that DON'T have a parent_zone_name defined
+  domains_needing_zones = {
+    for k, v in local.all_domains : k => v
+    if v.parent_zone_name == null
+  }
+
   # Extract just the domain names for ACM certificate SANs
   all_domain_names = [for k, v in local.all_domains : v.domain]
 
+  # Map of ONLY the zones we created
+  created_zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
+
   # Mapping domain names to their respective Route 53 Hosted Zone IDs
-  # This works for both dynamic and static domains
-  zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
+  # Logic: If parent_zone_name exists, use that zone's ID. Otherwise, use the domain's own zone ID.
+  zone_ids = {
+    for k, v in local.all_domains : v.domain => (
+      v.parent_zone_name != null ? 
+      local.created_zone_ids[v.parent_zone_name] : 
+      local.created_zone_ids[v.domain]
+    )
+  }
 
   # SCALING FIX: Creating a flat list of domain index and token index (0, 1, 2)
   # Only for dynamic domains that need SES configuration
@@ -48,7 +64,7 @@ locals {
 # 1. Multi-Domain Hosted Zone Creation
 # Creates Route53 hosted zones for ALL domains (dynamic + static)
 resource "aws_route53_zone" "client_hosted_zones" {
-  for_each = local.all_domains
+  for_each = local.domains_needing_zones
 
   name    = each.value.domain
   comment = "Managed by Terraform for Client: ${each.key} (${each.value.type})"

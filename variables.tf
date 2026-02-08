@@ -1,27 +1,25 @@
-# root/variables.tf
-
 variable "aws_region" {
-  type    = string
+  type = string
 }
 
 variable "project_name" {
-  type    = string
+  type = string
 }
 
 variable "vpc_cidr" {
-  type    = string
+  type = string
 }
 
 variable "client_domains" {
-  type    = map(string)
-  description = "Dynamic app domains"
+  type        = map(any) # Changed to 'any' to support domain + priority objects
+  description = "Dynamic app domains with priority"
 }
 
 variable "static_client_configs" {
-  type    = map(any)
+  type        = map(any)
   description = "Static site domains"
 }
 
 variable "forwarding_email" {
-  type    = string
+  type = string
 }

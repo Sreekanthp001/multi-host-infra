@@ -19,3 +19,7 @@ output "name_servers" {
   description = "Name servers for the created hosted zones"
   value       = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.name_servers }
 }
+
+output "acm_validation_id" {
+  value = aws_acm_certificate_validation.cert_validation.id
+}

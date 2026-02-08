@@ -73,7 +73,7 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   }
 
   lambda_action {
-    function_arn = aws_lambda_function.ses_forwarder_lambda.arn
+    function_arn = aws_lambda_function.ses_bounce_handler.arn
     position     = 2
     invocation_type = "Event"
   }

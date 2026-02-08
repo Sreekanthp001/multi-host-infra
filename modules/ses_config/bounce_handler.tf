@@ -1,5 +1,9 @@
 # modules/ses_config/bounce_handler.tf
-
+data "archive_file" "bounce_zip" {
+  type        = "zip"
+  source_file = "${path.root}/lambda/bounce_handler_lambda.js"
+  output_path = "${path.module}/bounce_handler_lambda.zip"
+}
 # 1. IAM Role for Bounce Handler Lambda
 resource "aws_iam_role" "ses_bounce_lambda_role" {
   name = "${var.project_name}-ses-bounce-role"

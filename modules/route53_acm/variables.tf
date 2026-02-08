@@ -58,3 +58,15 @@ variable "cloudfront_hosted_zone_ids" {
   type        = map(string)
   default     = {}
 }
+
+variable "main_domain" {
+  description = "The primary domain for the infrastructure (e.g., webhizzy.in)"
+  type        = string
+  default     = ""
+}
+
+variable "mail_server_ip" {
+  description = "The public IP of the primary mail server"
+  type        = string
+  default     = ""
+}

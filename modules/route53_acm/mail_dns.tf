@@ -1,12 +1,14 @@
-# Automation for Client Domain Mail Records (MX, SPF, DMARC)
-# This uses the Elastic IP from the mail server module
-
-variable "mail_server_ip" {
-  type        = string
-  description = "Public IP of the primary mail server (mx.webhizzy.in)"
+# 1. Primary A Record for the Mail Server (mx.primarydomain.com)
+resource "aws_route53_record" "mail_server_a_record" {
+  count   = var.main_domain != "" && var.mail_server_ip != "" ? 1 : 0
+  zone_id = local.zone_ids[var.main_domain]
+  name    = "mx.${var.main_domain}"
+  type    = "A"
+  ttl     = 300
+  records = [var.mail_server_ip]
 }
 
-resource "aws_route53_record" "client_mx" {
+# 2. MX Records for Client Domains
   for_each = local.all_domains
   zone_id  = local.zone_ids[each.value.domain]
   name     = each.value.domain

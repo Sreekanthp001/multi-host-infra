@@ -24,10 +24,19 @@ locals {
   )
 
   # Filter: Only create zones for domains that DON'T have a parent_zone_name defined
-  domains_needing_zones = {
-    for k, v in local.all_domains : k => v
-    if v.parent_zone_name == null
-  }
+  domains_needing_zones = merge(
+    {
+      for k, v in local.all_domains : k => v
+      if v.parent_zone_name == null
+    },
+    # Ensure the main domain gets a zone even if not in the client lists
+    var.main_domain != "" ? {
+      "infrastructure_main" = {
+        domain = var.main_domain
+        type   = "system"
+      }
+    } : {}
+  )
 
   # Extract just the domain names for ACM certificate SANs
   all_domain_names = [for k, v in local.all_domains : v.domain]

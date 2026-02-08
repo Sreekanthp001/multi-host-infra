@@ -19,3 +19,13 @@ output "ecr_repository_url" {
   description = "ECR Repository URL for Docker push"
   value       = module.ecr.repository_url
 }
+
+output "mail_server_ip" {
+  description = "Business Mail Server Public IP"
+  value       = module.mail_server.mail_server_ip
+}
+
+output "mail_server_hostname" {
+  description = "Primary MX Hostname"
+  value       = module.mail_server.mail_server_hostname
+}

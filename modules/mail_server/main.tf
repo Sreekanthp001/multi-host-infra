@@ -74,12 +74,3 @@ resource "aws_eip" "mail_eip" {
   instance = aws_instance.mail_server.id
   domain   = "vpc"
 }
-
-# DNS for the Primary Mail Server
-resource "aws_route53_record" "mx_record" {
-  zone_id = var.main_zone_id
-  name    = "mx.${var.main_domain}"
-  type    = "A"
-  ttl     = "300"
-  records = [aws_eip.mail_eip.public_ip]
-}

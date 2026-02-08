@@ -36,10 +36,9 @@ module "mail_server" {
   project_name     = var.project_name
   vpc_id           = module.networking.vpc_id
   public_subnet_id = module.networking.public_subnet_ids[0]
-  ami_id           = "ami-0522ab6e1ddcc7055" # Ubuntu 22.04 LTS in ap-south-1 (Adjust as per region)
+  ami_id           = "ami-0522ab6e1ddcc7055" # Ubuntu 22.04 LTS in ap-south-1
   key_name         = "webhizzy-prod" # Ensure this key exists
   main_domain      = "webhizzy.in"
-  main_zone_id     = module.route53_acm.main_zone_id # Exported from route53 module
 }
 
 # 4. Route 53 & ACM Module
@@ -60,6 +59,7 @@ module "route53_acm" {
   mail_from_domains   = module.ses_config.mail_from_domains
   
   # Business Mail Integration
+  main_domain         = "webhizzy.in"
   mail_server_ip      = module.mail_server.mail_server_ip
 
   # CloudFront outputs for static domain routing

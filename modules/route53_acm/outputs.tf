@@ -23,3 +23,8 @@ output "name_servers" {
 output "acm_validation_id" {
   value = aws_acm_certificate_validation.cert_validation.id
 }
+
+output "main_zone_id" {
+  description = "The Hosted Zone ID for the main domain"
+  value       = var.main_domain != "" ? local.created_zone_ids[var.main_domain] : null
+}

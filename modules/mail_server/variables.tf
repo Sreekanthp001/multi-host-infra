@@ -4,4 +4,3 @@ variable "public_subnet_id" { type = string }
 variable "ami_id" { type = string }
 variable "key_name" { type = string }
 variable "main_domain" { type = string }
-variable "main_zone_id" { type = string }

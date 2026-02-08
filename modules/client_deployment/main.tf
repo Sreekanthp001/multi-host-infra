@@ -1,8 +1,6 @@
 # modules/client_deployment/main.tf
 
-# 1. ECS Target Group (Single Client per module instance)
 resource "aws_lb_target_group" "client_tg" {
-  # Nuvvu for_each teesi var.client_name use cheyali
   name        = "${var.project_name}-${var.client_name}-tg"
   port        = 80 
   protocol    = "HTTP"
@@ -23,12 +21,8 @@ resource "aws_lb_target_group" "client_tg" {
   }
 }
 
-# 2. ALB Listener Rule (Single Client per module instance)
 resource "aws_lb_listener_rule" "host_rule" {
   listener_arn = var.alb_https_listener_arn 
-  
-  # Priority logic: Multiple clients unnapudu unique ga undali
-  # Root nundi priority pass cheyadam best, or use dynamic logic
   priority     = var.priority_index + 100
 
   action {
@@ -38,16 +32,12 @@ resource "aws_lb_listener_rule" "host_rule" {
 
   condition {
     host_header {
-      values = [
-        # var.client_domains map lo unna values ni access chestunnam
-        values(var.client_domains)[0],
-        "*.${values(var.client_domains)[0]}"
-      ] 
+      # ikkada hardcode cheyakunda module ki vache domains list ni vadutunnam
+      values = var.client_domains
     }
   }
 }
 
-# 3. ECS Service (Single Client per module instance)
 resource "aws_ecs_service" "client_service" {
   name            = "${var.project_name}-${var.client_name}-svc"
   cluster         = var.ecs_cluster_id

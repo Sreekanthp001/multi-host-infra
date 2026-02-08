@@ -63,7 +63,7 @@ module "client_deployment" {
   
   project_name        = var.project_name     
   client_name         = each.key
-  client_domains      = { (each.key) = each.value }
+  client_domains  = each.value.domains
   priority_index      = index(keys(var.client_domains), each.key)
   
   vpc_id                        = module.networking.vpc_id

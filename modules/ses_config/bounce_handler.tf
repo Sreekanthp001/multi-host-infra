@@ -63,3 +63,28 @@ resource "aws_sns_topic_subscription" "complaint_subscription" {
   protocol  = "lambda"
   endpoint  = aws_lambda_function.ses_bounce_handler.arn
 }
+
+# modules/ses_config/bounce_handler.tf lo last lo idi add chey mawa
+
+# 6. SNS Topics for SES Notifications
+resource "aws_sns_topic" "ses_bounce_topic" {
+  name = "${var.project_name}-ses-bounce-topic"
+}
+
+resource "aws_sns_topic" "ses_complaint_topic" {
+  name = "${var.project_name}-ses-complaint-topic"
+}
+
+# 7. SES Identity Notification Setups
+# Idi SES domain ki SNS topics ni link chestundi
+resource "aws_ses_identity_notification_topic" "bounce" {
+  topic_arn                = aws_sns_topic.ses_bounce_topic.arn
+  notification_type        = "Bounce"
+  identity                 = aws_ses_domain_identity.client_ses_identity.domain
+}
+
+resource "aws_ses_identity_notification_topic" "complaint" {
+  topic_arn                = aws_sns_topic.ses_complaint_topic.arn
+  notification_type        = "Complaint"
+  identity                 = aws_ses_domain_identity.client_ses_identity.domain
+}

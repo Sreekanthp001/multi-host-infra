@@ -1,22 +1,18 @@
-# modules/route53_acm/main.tf
-
 data "aws_region" "current" {}
 
 locals {
-  # Flattening DKIM tokens for count-based resource creation
-  all_dkim_tokens = flatten(values(var.dkim_tokens))
-
-  dkim_records_data = flatten([
-    for k, domain_name in var.client_domains : [
-      for i in range(3) : {
-        domain_name = domain_name
-        token_value = element(var.dkim_tokens[k], i)
-      }
-    ]
-  ])
-  
   # Mapping domain names to their respective Route 53 Hosted Zone IDs
   zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
+
+  # SCALING LOGIC: Flattening DKIM tokens for 100+ domains without using 'count'
+  dkim_records_map = merge([
+    for client_key, tokens in var.dkim_tokens : {
+      for token in tokens : "${client_key}_${token}" => {
+        domain_name = var.client_domains[client_key].domain
+        token_value = token
+      }
+    }
+  ]...)
 }
 
 # 1. Multi-Domain Hosted Zone Creation
@@ -79,7 +75,7 @@ resource "aws_route53_record" "alb_alias" {
   }
 }
 
-# 6. SES Verification & Security Records (SPF, DMARC, MX)
+# 6. SES Verification & Security Records
 resource "aws_route53_record" "ses_verification_txt" {
   for_each = var.client_domains
   zone_id  = local.zone_ids[each.value.domain] 
@@ -98,13 +94,15 @@ resource "aws_route53_record" "client_mx_record" {
   records  = ["10 ${var.ses_mx_record}"]
 }
 
+# SCALING FIX: Using for_each for DKIM instead of count
 resource "aws_route53_record" "ses_dkim_records" {
-  count   = length(local.dkim_records_data)
-  zone_id = local.zone_ids[local.dkim_records_data[count.index].domain_name]
-  name    = "${local.dkim_records_data[count.index].token_value}._domainkey"
+  for_each = local.dkim_records_map
+  
+  zone_id = local.zone_ids[each.value.domain_name]
+  name    = "${each.value.token_value}._domainkey.${each.value.domain_name}"
   type    = "CNAME"
   ttl     = 600
-  records = ["${local.dkim_records_data[count.index].token_value}.dkim.amazonses.com"]
+  records = ["${each.value.token_value}.dkim.amazonses.com"]
 }
 
 resource "aws_route53_record" "client_spf_record" {

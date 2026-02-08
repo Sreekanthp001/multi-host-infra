@@ -39,20 +39,27 @@ locals {
   )
 
   # Extract just the domain names for ACM certificate SANs
-  all_domain_names = [for k, v in local.all_domains : v.domain]
+  all_domain_names = distinct(concat(
+    [for k, v in local.all_domains : v.domain],
+    var.main_domain != "" ? [var.main_domain] : []
+  ))
 
   # Map of ONLY the zones we created
   created_zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
 
   # Mapping domain names to their respective Route 53 Hosted Zone IDs
   # Logic: If parent_zone_name exists, use that zone's ID. Otherwise, use the domain's own zone ID.
-  zone_ids = {
-    for k, v in local.all_domains : v.domain => (
-      v.parent_zone_name != null ? 
-      local.created_zone_ids[v.parent_zone_name] : 
-      local.created_zone_ids[v.domain]
-    )
-  }
+  zone_ids = merge(
+    {
+      for k, v in local.all_domains : v.domain => (
+        v.parent_zone_name != null ? 
+        local.created_zone_ids[v.parent_zone_name] : 
+        local.created_zone_ids[v.domain]
+      )
+    },
+    # Ensure main_domain is present in zone_ids map
+    var.main_domain != "" ? { (var.main_domain) = local.created_zone_ids[var.main_domain] } : {}
+  )
 
   # SCALING FIX: Creating a flat list of domain index and token index (0, 1, 2)
   # Only for dynamic domains that need SES configuration

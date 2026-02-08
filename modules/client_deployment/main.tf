@@ -1,10 +1,9 @@
 # modules/client_deployment/main.tf
 
-# 1. ECS Target Group (Per Client)
-# Creates a unique target group for each client to handle internal routing.
+# 1. ECS Target Group (Single Client per module instance)
 resource "aws_lb_target_group" "client_tg" {
-  for_each    = var.client_domains  
-  name        = "${each.key}-tg"
+  # Nuvvu for_each teesi var.client_name use cheyali
+  name        = "${var.project_name}-${var.client_name}-tg"
   port        = 80 
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -20,39 +19,37 @@ resource "aws_lb_target_group" "client_tg" {
   }
 
   tags = {
-    Name = "${each.key}-target-group"
+    Name = "${var.client_name}-target-group"
   }
 }
 
-# 2. ALB Listener Rule (Per Client)
-# Configures host-based routing to direct traffic based on the domain name.
+# 2. ALB Listener Rule (Single Client per module instance)
 resource "aws_lb_listener_rule" "host_rule" {
-  for_each     = var.client_domains
   listener_arn = var.alb_https_listener_arn 
   
-  # Dynamic priority assignment to support high volume of domains (100+)
-  priority     = index(keys(var.client_domains), each.key) + 100
+  # Priority logic: Multiple clients unnapudu unique ga undali
+  # Root nundi priority pass cheyadam best, or use dynamic logic
+  priority     = var.priority_index + 100
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.client_tg[each.key].arn
+    target_group_arn = aws_lb_target_group.client_tg.arn
   }
 
   condition {
     host_header {
       values = [
-        each.value,
-        "*.${each.value}"
+        # var.client_domains map lo unna values ni access chestunnam
+        values(var.client_domains)[0],
+        "*.${values(var.client_domains)[0]}"
       ] 
     }
   }
 }
 
-# 3. ECS Service (Per Client)
-# Deploys the application containers into the private subnets.
+# 3. ECS Service (Single Client per module instance)
 resource "aws_ecs_service" "client_service" {
-  for_each        = var.client_domains
-  name            = "${each.key}-svc"
+  name            = "${var.project_name}-${var.client_name}-svc"
   cluster         = var.ecs_cluster_id
   task_definition = var.task_definition_arn
   desired_count   = 2 
@@ -65,7 +62,7 @@ resource "aws_ecs_service" "client_service" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.client_tg[each.key].arn
+    target_group_arn = aws_lb_target_group.client_tg.arn
     container_name   = "client-container" 
     container_port   = 80 
   }

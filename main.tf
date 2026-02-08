@@ -61,8 +61,9 @@ module "client_deployment" {
   source              = "./modules/client_deployment"
   for_each            = var.client_domains
   
-  client_name                   = each.key
-  client_domains                = { (each.key) = each.value }
+  client_name         = each.key
+  client_domains      = { (each.key) = each.value }
+  priority_index      = index(keys(var.client_domains), each.key)
   vpc_id                        = module.networking.vpc_id
   private_subnets               = module.networking.private_subnet_ids
   ecs_cluster_id                = module.ecs.ecs_cluster_id

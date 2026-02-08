@@ -4,15 +4,20 @@ locals {
   # Mapping domain names to their respective Route 53 Hosted Zone IDs
   zone_ids = { for k, v in aws_route53_zone.client_hosted_zones : v.name => v.zone_id }
 
-  # SCALING LOGIC: Flattening DKIM tokens for 100+ domains without using 'count'
-  dkim_records_map = merge([
-    for client_key, tokens in var.dkim_tokens : {
-      for token in tokens : "${client_key}_${token}" => {
-        domain_name = var.client_domains[client_key].domain
-        token_value = token
+  # SCALING FIX: Creating a flat list of domain index and token index (0, 1, 2)
+  # Idi static ga untundi kabatti Terraform plan lo error ivvadu
+  dkim_flat = flatten([
+    for client_key, domain_val in var.client_domains : [
+      for i in range(3) : {
+        key         = "${client_key}_${i}"
+        client_key  = client_key
+        token_index = i
+        domain_name = domain_val.domain
       }
-    }
-  ]...)
+    ]
+  ])
+
+  dkim_map = { for item in local.dkim_flat : item.key => item }
 }
 
 # 1. Multi-Domain Hosted Zone Creation
@@ -76,13 +81,17 @@ resource "aws_route53_record" "alb_alias" {
 }
 
 # 6. SES Verification & Security Records
-resource "aws_route53_record" "ses_verification_txt" {
-  for_each = var.client_domains
-  zone_id  = local.zone_ids[each.value.domain] 
-  name     = "_amazonses.${each.value.domain}"
-  type     = "TXT"
-  ttl      = 600
-  records  = [var.verification_tokens[each.key]] 
+resource "aws_route53_record" "ses_dkim_records" {
+  for_each = local.dkim_map
+  
+  zone_id = local.zone_ids[each.value.domain_name]
+  
+  # Token value ni records lona (value side) vaadutunnam, name side kadhu
+  # Dheenivalla Terraform ki keys mundhe telisipothayi
+  name    = "${var.dkim_tokens[each.value.client_key][each.value.token_index]}._domainkey.${each.value.domain_name}"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["${var.dkim_tokens[each.value.client_key][each.value.token_index]}.dkim.amazonses.com"]
 }
 
 resource "aws_route53_record" "client_mx_record" {

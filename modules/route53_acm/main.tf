@@ -68,8 +68,8 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 resource "aws_route53_record" "alb_alias" {
   for_each = var.client_domains
   
-  zone_id  = local.zone_ids[each.value] 
-  name     = each.value 
+  zone_id  = local.zone_ids[each.value.domain] 
+  name     = each.value.domain
   type     = "A"
 
   alias {
@@ -82,8 +82,8 @@ resource "aws_route53_record" "alb_alias" {
 # 6. SES Verification & Security Records (SPF, DMARC, MX)
 resource "aws_route53_record" "ses_verification_txt" {
   for_each = var.client_domains
-  zone_id  = local.zone_ids[each.value] 
-  name     = "_amazonses.${each.value}"
+  zone_id  = local.zone_ids[each.value.domain] 
+  name     = "_amazonses.${each.value.domain}"
   type     = "TXT"
   ttl      = 600
   records  = [var.verification_tokens[each.key]] 
@@ -91,8 +91,8 @@ resource "aws_route53_record" "ses_verification_txt" {
 
 resource "aws_route53_record" "client_mx_record" {
   for_each = var.client_domains
-  zone_id  = local.zone_ids[each.value] 
-  name     = each.value
+  zone_id  = local.zone_ids[each.value.domain] 
+  name     = each.value.domain
   type     = "MX"
   ttl      = 300
   records  = ["10 ${var.ses_mx_record}"]
@@ -109,8 +109,8 @@ resource "aws_route53_record" "ses_dkim_records" {
 
 resource "aws_route53_record" "client_spf_record" {
   for_each = var.client_domains
-  zone_id  = local.zone_ids[each.value] 
-  name     = each.value
+  zone_id  = local.zone_ids[each.value.domain] 
+  name     = each.value.domain
   type     = "TXT"
   ttl      = 600
   records  = ["v=spf1 include:amazonses.com ~all"]
@@ -118,9 +118,9 @@ resource "aws_route53_record" "client_spf_record" {
 
 resource "aws_route53_record" "client_dmarc_record" {
   for_each = var.client_domains
-  zone_id  = local.zone_ids[each.value] 
-  name     = "_dmarc.${each.value}"
+  zone_id  = local.zone_ids[each.value.domain] 
+  name     = "_dmarc.${each.value.domain}"
   type     = "TXT"
   ttl      = 600
-  records  = ["v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.value}"]
+  records  = ["v=DMARC1; p=none; rua=mailto:dmarc-reports@${each.value.domain}"]
 }

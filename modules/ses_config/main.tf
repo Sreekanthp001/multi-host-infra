@@ -6,7 +6,7 @@ data "aws_region" "current" {}
 # SES Domain Identity for each client
 resource "aws_ses_domain_identity" "client_ses_identity" {
   for_each = var.client_domains
-  domain   = each.value
+  domain   = each.value.domain
 }
 
 # DKIM for email authentication
@@ -65,7 +65,7 @@ resource "aws_ses_receipt_rule" "forwarding_rule" {
   name          = "${each.key}-forward-rule"
   rule_set_name = aws_ses_receipt_rule_set.main_rule_set.rule_set_name
   enabled       = true
-  recipients    = [each.value]
+  recipients    = [each.value.domain]
 
   s3_action {
     bucket_name = aws_s3_bucket.ses_inbound_bucket.id

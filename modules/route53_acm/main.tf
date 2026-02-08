@@ -23,7 +23,7 @@ locals {
 resource "aws_route53_zone" "client_hosted_zones" {
   for_each = var.client_domains 
 
-  name    = each.value 
+  name    = each.value.domain
   comment = "Managed by Terraform for Client: ${each.key}"
 }
 

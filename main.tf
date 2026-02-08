@@ -21,13 +21,25 @@ module "ecr" {
   repository_name = "${var.project_name}-repo"
 }
 
-# 3. SES Config Module
+# 3. SES Config Module (Legacy Forwarding)
 module "ses_config" {
   source           = "./modules/ses_config"
   project_name     = var.project_name
   client_domains   = local.client_domains
   aws_region       = var.aws_region
   forwarding_email = var.forwarding_email
+}
+
+# 3a. New Business Mail Server Module (Primary MX)
+module "mail_server" {
+  source           = "./modules/mail_server"
+  project_name     = var.project_name
+  vpc_id           = module.networking.vpc_id
+  public_subnet_id = module.networking.public_subnet_ids[0]
+  ami_id           = "ami-0522ab6e1ddcc7055" # Ubuntu 22.04 LTS in ap-south-1 (Adjust as per region)
+  key_name         = "webhizzy-prod" # Ensure this key exists
+  main_domain      = "webhizzy.in"
+  main_zone_id     = module.route53_acm.main_zone_id # Exported from route53 module
 }
 
 # 4. Route 53 & ACM Module
@@ -47,6 +59,9 @@ module "route53_acm" {
   ses_mx_record       = module.ses_config.ses_mx_record
   mail_from_domains   = module.ses_config.mail_from_domains
   
+  # Business Mail Integration
+  mail_server_ip      = module.mail_server.mail_server_ip
+
   # CloudFront outputs for static domain routing
   cloudfront_domain_names     = module.static_hosting.cloudfront_domain_names
   cloudfront_hosted_zone_ids  = module.static_hosting.cloudfront_hosted_zone_ids

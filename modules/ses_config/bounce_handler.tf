@@ -75,16 +75,17 @@ resource "aws_sns_topic" "ses_complaint_topic" {
   name = "${var.project_name}-ses-complaint-topic"
 }
 
-# 7. SES Identity Notification Setups
-# Idi SES domain ki SNS topics ni link chestundi
+# 7. SES Identity Notification Setups (Corrected with for_each)
 resource "aws_ses_identity_notification_topic" "bounce" {
+  for_each                 = var.client_domains # Loop through all domains
   topic_arn                = aws_sns_topic.ses_bounce_topic.arn
   notification_type        = "Bounce"
-  identity                 = aws_ses_domain_identity.client_ses_identity.domain
+  identity                 = aws_ses_domain_identity.client_ses_identity[each.key].domain
 }
 
 resource "aws_ses_identity_notification_topic" "complaint" {
+  for_each                 = var.client_domains # Loop through all domains
   topic_arn                = aws_sns_topic.ses_complaint_topic.arn
   notification_type        = "Complaint"
-  identity                 = aws_ses_domain_identity.client_ses_identity.domain
+  identity                 = aws_ses_domain_identity.client_ses_identity[each.key].domain
 }

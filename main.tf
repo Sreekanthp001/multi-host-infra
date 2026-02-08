@@ -9,8 +9,8 @@ module "networking" {
 
 # 2. ECR Module (Container Registry)
 module "ecr" {
-  source       = "./modules/ecr"
-  project_name = var.project_name
+  source          = "./modules/ecr"
+  repository_name = "${var.project_name}-repo" # project_name badulu repository_name ivvu
 }
 
 # 3. SES Config Module (Email, Lambda, S3 storage)

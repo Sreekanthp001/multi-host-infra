@@ -42,6 +42,8 @@ module "alb" {
   vpc_id              = module.networking.vpc_id
   public_subnet_ids   = module.networking.public_subnet_ids
   acm_certificate_arn = module.route53_acm.acm_certificate_arn
+  
+  acm_validation_resource = module.route53_acm.acm_validation_id
 }
 
 # 6. ECS Module (Cluster & Task Definitions)
